@@ -37,9 +37,14 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
+    // Allow access to landing page and auth pages without authentication
+    const publicPaths = ['/', '/auth/login', '/auth/register', '/auth/callback']
+    const isPublicPath = publicPaths.some(path => request.nextUrl.pathname === path)
+
     if (
       !user &&
-      !request.nextUrl.pathname.startsWith('/auth')
+      !isPublicPath &&
+      request.nextUrl.pathname.startsWith('/dashboard')
     ) {
       const url = request.nextUrl.clone()
       url.pathname = '/auth/login'
