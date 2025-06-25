@@ -21,7 +21,6 @@ interface UserProfile {
 }
 
 export default function SettingsPage() {
-  const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [workers, setWorkers] = useState<Worker[]>([])
@@ -51,6 +50,7 @@ export default function SettingsPage() {
 
   const fetchData = async () => {
     try {
+      const supabase = createClient()
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) {
         setError('User not authenticated')
@@ -122,6 +122,7 @@ export default function SettingsPage() {
     if (!confirm('Are you sure you want to disconnect QuickBooks?')) return
 
     try {
+      const supabase = createClient()
       const { error } = await supabase
         .from('quickbooks_integrations')
         .delete()
@@ -140,6 +141,7 @@ export default function SettingsPage() {
   const handleTestInvoice = async () => {
     try {
       // Create a test order first
+      const supabase = createClient()
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) return
 
@@ -194,6 +196,7 @@ export default function SettingsPage() {
     if (!user) return
 
     try {
+      const supabase = createClient()
       const workerData = {
         user_id: user.id,
         name: workerFormData.name.trim(),
@@ -239,6 +242,7 @@ export default function SettingsPage() {
     if (!confirm('Are you sure you want to delete this worker?')) return
 
     try {
+      const supabase = createClient()
       const { error } = await supabase
         .from('workers')
         .delete()
@@ -263,6 +267,7 @@ export default function SettingsPage() {
     if (!user) return
 
     try {
+      const supabase = createClient()
       const { data: profile } = await supabase
         .from('users')
         .select('*')
@@ -307,6 +312,7 @@ export default function SettingsPage() {
     setMessage('')
 
     try {
+      const supabase = createClient()
       let avatarUrl = profileData.avatar_url
 
       // Upload avatar if selected
@@ -367,6 +373,7 @@ export default function SettingsPage() {
     if (!user?.email) return
 
     try {
+      const supabase = createClient()
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/settings`
       })
@@ -383,6 +390,7 @@ export default function SettingsPage() {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return
 
     try {
+      const supabase = createClient()
       const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
       if (error) throw error
       
@@ -396,6 +404,7 @@ export default function SettingsPage() {
 
   const testStorageConnection = async () => {
     try {
+      const supabase = createClient()
       const { data, error } = await supabase.storage
         .from('avatars')
         .list('', { limit: 1 })

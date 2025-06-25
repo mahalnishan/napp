@@ -20,7 +20,6 @@ interface OrderService {
 
 export default function NewOrderPage() {
   const router = useRouter()
-  const supabase = createClient()
   
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
@@ -42,6 +41,7 @@ export default function NewOrderPage() {
   }, [])
 
   const fetchData = async () => {
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -88,6 +88,7 @@ export default function NewOrderPage() {
     setLoading(true)
 
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 

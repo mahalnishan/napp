@@ -162,6 +162,62 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
+## Deployment
+
+### Deploying to Vercel
+
+1. **Push your code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Initial commit"
+   git push origin main
+   ```
+
+2. **Connect to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Import your GitHub repository
+   - Vercel will automatically detect it's a Next.js project
+
+3. **Configure Environment Variables in Vercel**
+   - In your Vercel project dashboard, go to Settings > Environment Variables
+   - Add the following environment variables:
+   
+   **Required:**
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_APP_URL=https://your-vercel-domain.vercel.app
+   ```
+   
+   **Optional (for QuickBooks integration):**
+   ```
+   QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id
+   QUICKBOOKS_CLIENT_SECRET=your_quickbooks_client_secret
+   NEXT_PUBLIC_QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id
+   QUICKBOOKS_REDIRECT_URI=https://your-vercel-domain.vercel.app/api/quickbooks/callback
+   QUICKBOOKS_WEBHOOK_SECRET=your_webhook_secret
+   ```
+
+4. **Deploy**
+   - Vercel will automatically deploy your app
+   - Each push to your main branch will trigger a new deployment
+
+### Important Notes for Deployment
+
+- **Environment Variables**: Make sure all environment variables are set in Vercel before deploying
+- **Supabase URL**: Use your production Supabase project URL, not localhost
+- **QuickBooks Redirect URI**: Update your QuickBooks app settings to include your production domain
+- **CORS**: If you encounter CORS issues, check your Supabase project settings
+
+### Troubleshooting Deployment
+
+If you encounter build errors:
+
+1. **Check Environment Variables**: Ensure all required environment variables are set in Vercel
+2. **Supabase Connection**: Verify your Supabase project is active and accessible
+3. **Build Logs**: Check the Vercel build logs for specific error messages
+4. **Database Migration**: Ensure your database schema is properly set up in Supabase
+
 ## Database Schema
 
 The application uses the following main tables:

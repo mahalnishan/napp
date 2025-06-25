@@ -11,7 +11,6 @@ import { Service } from '@/lib/types'
 import { formatCurrency, ensureUserRecord } from '@/lib/utils'
 
 export default function ServicesPage() {
-  const supabase = createClient()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -30,6 +29,7 @@ export default function ServicesPage() {
 
   const fetchServices = async () => {
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
@@ -52,6 +52,7 @@ export default function ServicesPage() {
     setLoading(true)
 
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
@@ -106,6 +107,7 @@ export default function ServicesPage() {
     if (!confirm('Are you sure you want to delete this service?')) return
 
     try {
+      const supabase = createClient()
       const { error } = await supabase
         .from('services')
         .delete()

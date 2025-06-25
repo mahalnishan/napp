@@ -23,7 +23,6 @@ export default function EditOrderPage() {
   const router = useRouter()
   const params = useParams()
   const orderId = params.id as string
-  const supabase = createClient()
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -47,6 +46,7 @@ export default function EditOrderPage() {
 
   const fetchData = async () => {
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
@@ -145,6 +145,7 @@ export default function EditOrderPage() {
     setSaving(true)
 
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 

@@ -51,7 +51,6 @@ export default function ViewOrderPage() {
   const router = useRouter()
   const params = useParams()
   const orderId = params.id as string
-  const supabase = createClient()
   
   const [loading, setLoading] = useState(true)
   const [order, setOrder] = useState<OrderDetails | null>(null)
@@ -63,6 +62,7 @@ export default function ViewOrderPage() {
 
   const fetchOrder = async () => {
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 

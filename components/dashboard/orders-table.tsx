@@ -21,7 +21,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const [quickbooksConnected, setQuickbooksConnected] = useState(false)
   const [creatingInvoices, setCreatingInvoices] = useState<Set<string>>(new Set())
   const [invoiceMessages, setInvoiceMessages] = useState<Record<string, { type: 'success' | 'error', text: string }>>({})
-  const supabase = createClient()
 
   useEffect(() => {
     checkQuickBooksConnection()
@@ -29,6 +28,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
   const checkQuickBooksConnection = async () => {
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 

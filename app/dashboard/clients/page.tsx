@@ -12,7 +12,6 @@ import { Client } from '@/lib/types'
 import { ensureUserRecord } from '@/lib/utils'
 
 export default function ClientsPage() {
-  const supabase = createClient()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -34,6 +33,7 @@ export default function ClientsPage() {
 
   const fetchClients = async () => {
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
@@ -61,6 +61,7 @@ export default function ClientsPage() {
     setLoading(true)
 
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
@@ -126,6 +127,7 @@ export default function ClientsPage() {
     if (!confirm('Are you sure you want to delete this client?')) return
 
     try {
+      const supabase = createClient()
       const { error } = await supabase
         .from('clients')
         .delete()
@@ -146,6 +148,7 @@ export default function ClientsPage() {
 
   const handleToggleStatus = async (client: Client) => {
     try {
+      const supabase = createClient()
       const { error } = await supabase
         .from('clients')
         .update({ is_active: !client.is_active })

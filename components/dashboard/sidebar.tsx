@@ -27,13 +27,13 @@ interface UserProfile {
 export function Sidebar() {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClient()
   const [user, setUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const { collapsed, setCollapsed } = useSidebar()
 
   useEffect(() => {
     const getUser = async () => {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       
@@ -49,9 +49,10 @@ export function Sidebar() {
       }
     }
     getUser()
-  }, [supabase.auth])
+  }, [])
 
   const handleSignOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/auth/login')
   }
