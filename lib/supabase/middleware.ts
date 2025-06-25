@@ -6,10 +6,17 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  // Check if environment variables are available
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase environment variables not found in middleware')
+    return supabaseResponse
+  }
+
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -24,30 +31,34 @@ export async function updateSession(request: NextRequest) {
           )
         },
       },
+    })
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (
+      !user &&
+      !request.nextUrl.pathname.startsWith('/auth')
+    ) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      return NextResponse.redirect(url)
     }
-  )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    if (
+      user &&
+      request.nextUrl.pathname.startsWith('/auth')
+    ) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    return NextResponse.redirect(url)
+    return supabaseResponse
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // Return the response without authentication checks if there's an error
+    return supabaseResponse
   }
-
-  if (
-    user &&
-    request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
-
-  return supabaseResponse
 } 
