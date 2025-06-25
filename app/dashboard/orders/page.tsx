@@ -1,4 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
@@ -6,7 +9,7 @@ import Link from 'next/link'
 import { OrdersTable } from '@/components/dashboard/orders-table'
 
 async function getOrders(userId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const { data: orders } = await supabase
     .from('work_orders')
@@ -25,15 +28,47 @@ async function getOrders(userId: string) {
   return orders || []
 }
 
-export default async function OrdersPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function OrdersPage() {
+  const [loading, setLoading] = useState(true)
+  const [orders, setOrders] = useState<any[]>([])
 
-  if (!user) {
-    return null
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+          return
+        }
+
+        const ordersData = await getOrders(user.id)
+        setOrders(ordersData)
+      } catch (error) {
+        console.error('Error fetching orders:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
+            <p className="text-gray-600">Manage your work orders and track their progress.</p>
+          </div>
+        </div>
+        <div className="text-center py-8">
+          <div className="text-gray-500">Loading orders...</div>
+        </div>
+      </div>
+    )
   }
-
-  const orders = await getOrders(user.id)
 
   return (
     <div className="space-y-6">

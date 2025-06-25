@@ -1,4 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, DollarSign, FileText, Users, Package, TrendingUp, Calendar, Clock } from 'lucide-react'
@@ -7,7 +10,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { DashboardStats, WorkOrderWithDetails } from '@/lib/types'
 
 async function getDashboardStats(userId: string): Promise<DashboardStats> {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const [
     { count: totalOrders },
@@ -38,7 +41,7 @@ async function getDashboardStats(userId: string): Promise<DashboardStats> {
 }
 
 async function getRecentOrders(userId: string): Promise<WorkOrderWithDetails[]> {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const { data: orders } = await supabase
     .from('work_orders')
@@ -58,18 +61,60 @@ async function getRecentOrders(userId: string): Promise<WorkOrderWithDetails[]> 
   return orders || []
 }
 
-export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function DashboardPage() {
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<DashboardStats>({
+    totalOrders: 0,
+    totalClients: 0,
+    totalServices: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+    completedOrders: 0
+  })
+  const [recentOrders, setRecentOrders] = useState<WorkOrderWithDetails[]>([])
 
-  if (!user) {
-    return null
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+          return
+        }
+
+        const [statsData, ordersData] = await Promise.all([
+          getDashboardStats(user.id),
+          getRecentOrders(user.id)
+        ])
+
+        setStats(statsData)
+        setRecentOrders(ordersData)
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening with your work orders.</p>
+          </div>
+        </div>
+        <div className="text-center py-8">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    )
   }
-
-  const [stats, recentOrders] = await Promise.all([
-    getDashboardStats(user.id),
-    getRecentOrders(user.id)
-  ])
 
   const statCards = [
     {

@@ -1,4 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   BarChart3, 
@@ -18,7 +21,7 @@ import { TopClientsTable } from '@/components/top-clients-table'
 import { TopServicesTable } from '@/components/top-services-table'
 
 async function getAnalyticsData(userId: string) {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   // Get all orders for the user
   const { data: orders } = await supabase
@@ -157,16 +160,51 @@ function calculateMetrics(orders: any[], clients: any[], services: any[]) {
   }
 }
 
-export default async function AnalyticsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function AnalyticsPage() {
+  const [loading, setLoading] = useState(true)
+  const [metrics, setMetrics] = useState<any>(null)
+  const [clients, setClients] = useState<any[]>([])
+  const [services, setServices] = useState<any[]>([])
 
-  if (!user) {
-    return null
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+          return
+        }
+
+        const { orders, clients: clientsData, services: servicesData } = await getAnalyticsData(user.id)
+        const metricsData = calculateMetrics(orders, clientsData, servicesData)
+        
+        setMetrics(metricsData)
+        setClients(clientsData)
+        setServices(servicesData)
+      } catch (error) {
+        console.error('Error fetching analytics data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading || !metrics) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
+          <p className="text-muted-foreground">Track your performance and insights</p>
+        </div>
+        <div className="text-center py-8">
+          <div className="text-gray-500">Loading analytics...</div>
+        </div>
+      </div>
+    )
   }
-
-  const { orders, clients, services } = await getAnalyticsData(user.id)
-  const metrics = calculateMetrics(orders, clients, services)
 
   const statCards = [
     {
@@ -315,7 +353,7 @@ export default async function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {orders.slice(0, 5).map((order) => (
+              {metrics.recentOrders?.slice(0, 5).map((order: any) => (
                 <div key={order.id} className="flex justify-between items-center">
                   <div>
                     <p className="text-sm font-medium">{(order.client as any)?.name || 'Unknown Client'}</p>
