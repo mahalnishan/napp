@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { redirect } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { MobileNav } from '@/components/mobile-nav'
 import { useState, useEffect, createContext, useContext } from 'react'
@@ -22,25 +22,32 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const checkUser = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        redirect('/auth/login')
-      } else {
-        setUser(user)
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (!user) {
+          router.push('/auth/login')
+        } else {
+          setUser(user)
+        }
+      } catch (error) {
+        console.error('Error checking user:', error)
+        router.push('/auth/login')
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     
     checkUser()
-  }, [])
+  }, [router])
 
   if (loading) {
     return (
