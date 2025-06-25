@@ -1,0 +1,45 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#3b82f6"/>
+  <rect x="0" y="0" width="1200" height="630" fill="url(#gradient)"/>
+  
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Pattern -->
+  <circle cx="100" cy="100" r="50" fill="white" opacity="0.1"/>
+  <circle cx="1100" cy="530" r="80" fill="white" opacity="0.1"/>
+  <circle cx="200" cy="500" r="30" fill="white" opacity="0.1"/>
+  <circle cx="1000" cy="150" r="40" fill="white" opacity="0.1"/>
+  
+  <!-- Main Content -->
+  <g transform="translate(100, 150)">
+    <!-- Logo/Icon -->
+    <rect x="0" y="0" width="80" height="80" rx="16" fill="white"/>
+    <path d="M20 30 L40 50 L60 20" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Text -->
+    <text x="100" y="35" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white">nApp</text>
+    <text x="100" y="70" font-family="Arial, sans-serif" font-size="24" fill="white" opacity="0.9">Work Order Management</text>
+  </g>
+  
+  <!-- Subtitle -->
+  <text x="100" y="350" font-family="Arial, sans-serif" font-size="32" fill="white" opacity="0.9">
+    Streamline Your Work Orders Like Never Before
+  </text>
+  
+  <!-- CTA -->
+  <rect x="100" y="420" width="300" height="60" rx="30" fill="white"/>
+  <text x="250" y="460" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#3b82f6" text-anchor="middle">
+    Get Free Beta Access
+  </text>
+  
+  <!-- Beta Badge -->
+  <rect x="1000" y="100" width="150" height="40" rx="20" fill="#10b981"/>
+  <text x="1075" y="125" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">
+    Now in Beta
+  </text>
+</svg> 
