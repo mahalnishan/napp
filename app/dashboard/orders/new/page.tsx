@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,11 @@ export default function NewOrderPage() {
   const [createQuickBooksInvoice, setCreateQuickBooksInvoice] = useState(false)
   const [quickbooksConnected, setQuickbooksConnected] = useState(false)
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -52,11 +56,7 @@ export default function NewOrderPage() {
     setServices(servicesData.data || [])
     setWorkers(workersData.data || [])
     setQuickbooksConnected(!!integrationData.data)
-  }, [supabase])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  }
 
   const addService = () => {
     setOrderServices([...orderServices, { serviceId: '', quantity: 1, price: 0 }])
@@ -268,7 +268,7 @@ export default function NewOrderPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
                 </label>
-                <Select value={status} onValueChange={(value: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' | 'Archived') => setStatus(value)}>
+                <Select value={status} onValueChange={(value: any) => setStatus(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -286,7 +286,7 @@ export default function NewOrderPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Payment Status
                 </label>
-                <Select value={paymentStatus} onValueChange={(value: 'Unpaid' | 'Pending Invoice' | 'Paid') => setPaymentStatus(value)}>
+                <Select value={paymentStatus} onValueChange={(value: any) => setPaymentStatus(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

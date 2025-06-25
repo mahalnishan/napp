@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Edit, Trash2, Save, X, User, CheckCircle, Settings, Users, Building2, FileText, Unlink, AlertCircle, Link as LinkIcon, Key } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Plus, Edit, Trash2, Save, X, Settings, Link as LinkIcon, Unlink, CheckCircle, AlertCircle, Palette, FileText, Building2, User, Calendar, Upload, Key, Users } from 'lucide-react'
 import { Worker } from '@/lib/types'
+import { ensureUserRecord } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
-import Image from 'next/image'
+import Link from 'next/link'
 
 interface UserProfile {
   id: string
@@ -21,7 +23,9 @@ interface UserProfile {
 export default function SettingsPage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [workers, setWorkers] = useState<Worker[]>([])
+  const [quickbooksConnected, setQuickbooksConnected] = useState(false)
   const [showWorkerForm, setShowWorkerForm] = useState(false)
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null)
   const [workerFormData, setWorkerFormData] = useState({
@@ -29,50 +33,72 @@ export default function SettingsPage() {
     email: '',
     phone: ''
   })
-  const [quickbooksConnected, setQuickbooksConnected] = useState(false)
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [profileFormData, setProfileFormData] = useState({
+  const [profileData, setProfileData] = useState({
     name: '',
-    phone: ''
+    phone: '',
+    avatar_url: ''
   })
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string>('')
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const [workersData, integrationData, profileData] = await Promise.all([
-        supabase.from('workers').select('*').eq('user_id', user.id),
-        supabase.from('quickbooks_integrations').select('*').eq('user_id', user.id).single(),
-        supabase.from('users').select('*').eq('id', user.id).single()
-      ])
-
-      setWorkers(workersData.data || [])
-      setQuickbooksConnected(!!integrationData.data)
-      setUserProfile(profileData.data)
-      
-      if (profileData.data) {
-        setProfileFormData({
-          name: profileData.data.name || '',
-          phone: profileData.data.phone || ''
-        })
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) {
+        setError('User not authenticated')
+        setLoading(false)
+        return
       }
+
+      // Fetch user profile
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+
+      if (profile) {
+        setUser(profile)
+        setProfileData({
+          name: profile.name || '',
+          phone: profile.phone || '',
+          avatar_url: profile.avatar_url || ''
+        })
+        setAvatarPreview(profile.avatar_url || '')
+      }
+
+      // Fetch workers
+      const { data: workersData } = await supabase
+        .from('workers')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .order('name')
+
+      setWorkers(workersData || [])
+
+      // Check QuickBooks connection
+      const { data: integration } = await supabase
+        .from('quickbooks_integrations')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .single()
+
+      setQuickbooksConnected(!!integration)
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError('Failed to load settings')
     } finally {
       setLoading(false)
     }
-  }, [supabase])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  }
 
   const handleQuickBooksConnect = async () => {
     try {
@@ -99,7 +125,7 @@ export default function SettingsPage() {
       const { error } = await supabase
         .from('quickbooks_integrations')
         .delete()
-        .eq('user_id', userProfile?.id)
+        .eq('user_id', user?.id)
 
       if (error) throw error
 
@@ -165,11 +191,11 @@ export default function SettingsPage() {
 
   const handleWorkerSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!userProfile) return
+    if (!user) return
 
     try {
       const workerData = {
-        user_id: userProfile.id,
+        user_id: user.id,
         name: workerFormData.name.trim(),
         email: workerFormData.email.trim(),
         phone: workerFormData.phone.trim() || null
@@ -233,8 +259,31 @@ export default function SettingsPage() {
     setShowWorkerForm(false)
   }
 
+  const fetchProfile = async () => {
+    if (!user) return
+
+    try {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (profile) {
+        setProfileData({
+          name: profile.name || '',
+          phone: profile.phone || '',
+          avatar_url: profile.avatar_url || ''
+        })
+        setAvatarPreview(profile.avatar_url || '')
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    }
+  }
+
   const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfileFormData({ ...profileFormData, [e.target.name]: e.target.value })
+    setProfileData({ ...profileData, [e.target.name]: e.target.value })
   }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,19 +300,19 @@ export default function SettingsPage() {
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!userProfile) return
+    if (!user) return
 
     setUploading(true)
     setError('')
     setMessage('')
 
     try {
-      let avatarUrl = userProfile.avatar_url
+      let avatarUrl = profileData.avatar_url
 
       // Upload avatar if selected
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop()
-        const fileName = `${userProfile.id}-${Date.now()}.${fileExt}`
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
         const filePath = `avatars/${fileName}`
 
         const { error: uploadError } = await supabase.storage
@@ -293,11 +342,11 @@ export default function SettingsPage() {
       const { error: updateError } = await supabase
         .from('users')
         .update({
-          name: profileFormData.name || null,
-          phone: profileFormData.phone || null,
+          name: profileData.name || null,
+          phone: profileData.phone || null,
           avatar_url: avatarUrl
         })
-        .eq('id', userProfile.id)
+        .eq('id', user.id)
 
       if (updateError) throw updateError
 
@@ -315,10 +364,10 @@ export default function SettingsPage() {
   }
 
   const handleResetPassword = async () => {
-    if (!userProfile?.email) return
+    if (!user?.email) return
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(userProfile.email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/settings`
       })
 
@@ -334,7 +383,7 @@ export default function SettingsPage() {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userProfile?.id || '')
+      const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
       if (error) throw error
       
       // Redirect to home page
@@ -347,7 +396,7 @@ export default function SettingsPage() {
 
   const testStorageConnection = async () => {
     try {
-      const { error } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('avatars')
         .list('', { limit: 1 })
 
@@ -380,7 +429,7 @@ export default function SettingsPage() {
     )
   }
 
-  if (!userProfile) {
+  if (!user) {
     return (
       <div className="space-y-6">
         <div>
@@ -430,7 +479,7 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium mb-2">Name</label>
                   <Input
                     name="name"
-                    value={profileFormData.name}
+                    value={profileData.name}
                     onChange={handleProfileInputChange}
                     placeholder="Enter your name"
                   />
@@ -439,7 +488,7 @@ export default function SettingsPage() {
                   <label className="block text-sm font-medium mb-2">Phone</label>
                   <Input
                     name="phone"
-                    value={profileFormData.phone}
+                    value={profileData.phone}
                     onChange={handleProfileInputChange}
                     placeholder="Enter your phone number"
                   />
@@ -447,38 +496,20 @@ export default function SettingsPage() {
                 <div>
                   <label className="block text-sm font-medium mb-2">Profile Picture</label>
                   <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      {avatarPreview ? (
-                        <Image
-                          src={avatarPreview}
-                          alt="Avatar"
-                          width={64}
-                          height={64}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="h-8 w-8 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        Change Avatar
-                      </Button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden"
+                    {avatarPreview && (
+                      <img
+                        src={avatarPreview}
+                        alt="Profile"
+                        className="w-16 h-16 rounded-full object-cover"
                       />
-                    </div>
+                    )}
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="flex-1"
+                    />
                   </div>
                 </div>
                 <div className="flex space-x-2">

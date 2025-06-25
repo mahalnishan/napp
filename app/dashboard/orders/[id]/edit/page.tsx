@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -17,27 +17,6 @@ interface OrderService {
   serviceId: string
   quantity: number
   price: number
-}
-
-interface OrderWithServices {
-  id: string
-  client_id: string
-  assigned_to_type: 'Self' | 'Worker'
-  assigned_to_id?: string
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' | 'Archived'
-  schedule_date_time: string
-  order_amount: number
-  order_payment_status: 'Unpaid' | 'Pending Invoice' | 'Paid'
-  notes?: string
-  services: Array<{
-    service_id: string
-    quantity: number
-    service: {
-      id: string
-      name: string
-      price: number
-    }
-  }>
 }
 
 export default function EditOrderPage() {
@@ -62,7 +41,11 @@ export default function EditOrderPage() {
   const [createQuickBooksInvoice, setCreateQuickBooksInvoice] = useState(false)
   const [quickbooksConnected, setQuickbooksConnected] = useState(false)
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    fetchData()
+  }, [orderId])
+
+  const fetchData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -101,24 +84,23 @@ export default function EditOrderPage() {
       setQuickbooksConnected(!!integrationData.data)
 
       // Populate form with order data
-      const orderData = order as OrderWithServices
-      setSelectedClient(orderData.client_id)
-      setAssignedToType(orderData.assigned_to_type)
-      setAssignedToId(orderData.assigned_to_id || '')
+      setSelectedClient(order.client_id)
+      setAssignedToType(order.assigned_to_type)
+      setAssignedToId(order.assigned_to_id || '')
       // Format schedule_date_time for datetime-local input
-      const dt = orderData.schedule_date_time
+      const dt = order.schedule_date_time
       let formattedDate = ''
       if (dt) {
         const d = new Date(dt)
         formattedDate = d.toISOString().slice(0, 16)
       }
       setScheduleDateTime(formattedDate)
-      setStatus(orderData.status)
-      setPaymentStatus(orderData.order_payment_status)
-      setNotes(orderData.notes || '')
+      setStatus(order.status)
+      setPaymentStatus(order.order_payment_status)
+      setNotes(order.notes || '')
 
       // Populate order services
-      const orderServicesData = orderData.services.map((wos) => ({
+      const orderServicesData = order.services.map((wos: any) => ({
         serviceId: wos.service_id,
         quantity: wos.quantity,
         price: wos.service.price
@@ -131,11 +113,7 @@ export default function EditOrderPage() {
     } finally {
       setLoading(false)
     }
-  }, [orderId, router, supabase])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  }
 
   const addService = () => {
     setOrderServices([...orderServices, { serviceId: '', quantity: 1, price: 0 }])
@@ -373,7 +351,7 @@ export default function EditOrderPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
                 </label>
-                <Select value={status} onValueChange={(value: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' | 'Archived') => setStatus(value)}>
+                <Select value={status} onValueChange={(value: any) => setStatus(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -391,7 +369,7 @@ export default function EditOrderPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Payment Status
                 </label>
-                <Select value={paymentStatus} onValueChange={(value: 'Unpaid' | 'Pending Invoice' | 'Paid') => setPaymentStatus(value)}>
+                <Select value={paymentStatus} onValueChange={(value: any) => setPaymentStatus(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-interface OrderService {
-  serviceId: string
-  quantity: number
-  price: number
-}
-
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -93,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     // Create invoice in QuickBooks
     const invoiceData = {
-      Line: services.map((service: OrderService) => ({
+      Line: services.map((service: { serviceId: string; quantity: number; price: number }) => ({
         Amount: service.price * service.quantity,
         DetailType: 'SalesItemLineDetail',
         SalesItemLineDetail: {

@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { MobileNav } from '@/components/mobile-nav'
 import { useState, useEffect, createContext, useContext } from 'react'
-import { User } from '@supabase/supabase-js'
 
 // Create context for sidebar state
 const SidebarContext = createContext<{
@@ -23,7 +22,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [loading, setLoading] = useState(true)
 

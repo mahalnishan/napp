@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-interface WebhookEntity {
-  name: string
-  id: string
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
-
     // Verify webhook signature (you should implement proper signature verification)
     // For now, we'll skip verification for development
 
@@ -37,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleInvoiceChange(entity: WebhookEntity) {
+async function handleInvoiceChange(entity: { id: string; name: string }) {
   const supabase = await createClient()
   
   try {
