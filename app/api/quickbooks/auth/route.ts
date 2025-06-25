@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const clientId = process.env.QUICKBOOKS_CLIENT_ID
   const redirectUri = process.env.QUICKBOOKS_REDIRECT_URI
   
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ authUrl: authUrl.toString() })
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('QuickBooks auth POST request received')
     

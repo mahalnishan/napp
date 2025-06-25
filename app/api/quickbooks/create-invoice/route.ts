@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+interface OrderService {
+  serviceId: string
+  quantity: number
+  price: number
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -10,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { orderId, clientId, services, totalAmount } = await request.json()
+    const { orderId, clientId, services } = await request.json()
 
     // Get QuickBooks integration
     const { data: integration } = await supabase
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     // Create invoice in QuickBooks
     const invoiceData = {
-      Line: services.map((service: any) => ({
+      Line: services.map((service: OrderService) => ({
         Amount: service.price * service.quantity,
         DetailType: 'SalesItemLineDetail',
         SalesItemLineDetail: {

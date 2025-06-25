@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Edit, Trash2, Eye, FileText, CheckCircle, AlertCircle } from 'lucide-react'
+import { Search, Edit, Eye, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { WorkOrderWithDetails } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
@@ -23,11 +23,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const [invoiceMessages, setInvoiceMessages] = useState<Record<string, { type: 'success' | 'error', text: string }>>({})
   const supabase = createClient()
 
-  useEffect(() => {
-    checkQuickBooksConnection()
-  }, [])
-
-  const checkQuickBooksConnection = async () => {
+  const checkQuickBooksConnection = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -42,7 +38,11 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     } catch (error) {
       console.error('Error checking QuickBooks connection:', error)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    checkQuickBooksConnection()
+  }, [checkQuickBooksConnection])
 
   const handleCreateInvoice = async (order: WorkOrderWithDetails) => {
     if (creatingInvoices.has(order.id)) return
@@ -51,7 +51,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     setInvoiceMessages(prev => ({ ...prev, [order.id]: { type: 'success', text: '' } }))
 
     try {
-      const invoiceResponse = await fetch('/api/quickbooks/create-invoice', {
+      const response = await fetch('/api/quickbooks/create-invoice', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,8 +68,8 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         })
       })
 
-      if (invoiceResponse.ok) {
-        const { invoiceId } = await invoiceResponse.json()
+      if (response.ok) {
+        const { invoiceId } = await response.json()
         setInvoiceMessages(prev => ({
           ...prev,
           [order.id]: { 
@@ -87,7 +87,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           })
         }, 5000)
       } else {
-        const error = await invoiceResponse.json()
+        const error = await response.json()
         setInvoiceMessages(prev => ({
           ...prev,
           [order.id]: { 
@@ -141,6 +141,19 @@ export function OrdersTable({ orders }: OrdersTableProps) {
       case 'Unpaid': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  if (filteredOrders.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-gray-500">No orders found</div>
+        <Link href="/dashboard/orders/new">
+          <Button className="mt-4">
+            Create Your First Order
+          </Button>
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -221,7 +234,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">
-                    {order.services.map((wos, index) => (
+                    {order.services.map((wos) => (
                       <div key={wos.id}>
                         {wos.quantity}x {wos.service.name}
                       </div>
@@ -263,9 +276,9 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         <Edit className="h-4 w-4" />
                       </Button>
                     </Link>
-                    {quickbooksConnected && !order.quickbooks_invoice_id && (
-                      <Button 
-                        variant="outline" 
+                    {quickbooksConnected && !order.quickbooks_invoice_id && order.order_payment_status === 'Unpaid' && (
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleCreateInvoice(order)}
                         disabled={creatingInvoices.has(order.id)}
@@ -274,14 +287,14 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         {creatingInvoices.has(order.id) ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600" />
                         ) : (
-                          <FileText className="h-4 w-4" />
+                          <ExternalLink className="h-4 w-4" />
                         )}
                       </Button>
                     )}
                     {order.quickbooks_invoice_id && (
-                      <div className="flex items-center text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                      </div>
+                      <Button variant="outline" size="sm" disabled>
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                   {/* Invoice Message */}
@@ -307,12 +320,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           </tbody>
         </table>
       </div>
-
-      {filteredOrders.length === 0 && (
-        <div className="text-center py-8">
-          <div className="text-gray-500">No orders found</div>
-        </div>
-      )}
     </div>
   )
 } 

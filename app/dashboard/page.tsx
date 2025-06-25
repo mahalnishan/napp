@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, DollarSign, FileText, Users, Package, TrendingUp, Calendar, Clock, MapPin } from 'lucide-react'
+import { Plus, DollarSign, FileText, Users, Package, TrendingUp, Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { DashboardStats, WorkOrderWithDetails } from '@/lib/types'
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening with your work orders.</p>
+          <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening with your work orders.</p>
         </div>
         <Link href="/dashboard/orders/new">
           <Button className="hover-lift">

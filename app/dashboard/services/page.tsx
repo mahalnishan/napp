@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,11 +24,7 @@ export default function ServicesPage() {
     quickbooks_service_id: ''
   })
 
-  useEffect(() => {
-    fetchServices()
-  }, [])
-
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -45,7 +41,11 @@ export default function ServicesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchServices()
+  }, [fetchServices])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

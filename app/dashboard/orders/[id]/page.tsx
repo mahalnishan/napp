@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,7 +48,6 @@ interface OrderDetails {
 }
 
 export default function ViewOrderPage() {
-  const router = useRouter()
   const params = useParams()
   const orderId = params.id as string
   const supabase = createClient()
@@ -57,11 +56,7 @@ export default function ViewOrderPage() {
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetchOrder()
-  }, [orderId])
-
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -93,7 +88,11 @@ export default function ViewOrderPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [orderId, supabase])
+
+  useEffect(() => {
+    fetchOrder()
+  }, [fetchOrder])
 
   const getStatusColor = (status: string) => {
     switch (status) {

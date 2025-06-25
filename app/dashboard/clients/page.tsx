@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,11 +28,7 @@ export default function ClientsPage() {
     is_active: true
   })
 
-  useEffect(() => {
-    fetchClients()
-  }, [])
-
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -54,7 +50,11 @@ export default function ClientsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchClients()
+  }, [fetchClients])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

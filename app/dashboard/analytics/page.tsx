@@ -1,10 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { 
   BarChart3, 
   TrendingUp, 
-  TrendingDown, 
   DollarSign, 
   Users, 
   Package, 
@@ -18,6 +16,38 @@ import { AnalyticsChart } from '@/components/analytics-chart'
 import { RevenueChart } from '@/components/revenue-chart'
 import { TopClientsTable } from '@/components/top-clients-table'
 import { TopServicesTable } from '@/components/top-services-table'
+
+interface OrderWithDetails {
+  id: string
+  status: string
+  order_payment_status: string
+  order_amount: number
+  created_at: string
+  client: {
+    id: string
+    name: string
+  }
+  services: Array<{
+    quantity: number
+    service: {
+      id: string
+      name: string
+      price: number
+    }
+  }>
+}
+
+interface ClientData {
+  id: string
+  name: string
+  email: string
+}
+
+interface ServiceData {
+  id: string
+  name: string
+  price: number
+}
 
 async function getAnalyticsData(userId: string) {
   const supabase = await createClient()
@@ -48,10 +78,14 @@ async function getAnalyticsData(userId: string) {
     .select('*')
     .eq('user_id', userId)
 
-  return { orders: orders || [], clients: clients || [], services: services || [] }
+  return { 
+    orders: (orders || []) as OrderWithDetails[], 
+    clients: (clients || []) as ClientData[], 
+    services: (services || []) as ServiceData[] 
+  }
 }
 
-function calculateMetrics(orders: any[], clients: any[], services: any[]) {
+function calculateMetrics(orders: OrderWithDetails[]) {
   const now = new Date()
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
@@ -91,8 +125,8 @@ function calculateMetrics(orders: any[], clients: any[], services: any[]) {
 
   // Top clients by revenue
   const clientRevenue = orders.reduce((acc, order) => {
-    const clientId = order.client_id
-    const clientName = (order.client as any)?.name || 'Unknown'
+    const clientId = order.client.id
+    const clientName = order.client.name || 'Unknown'
     if (!acc[clientId]) {
       acc[clientId] = { name: clientName, revenue: 0, orders: 0 }
     }
@@ -102,26 +136,26 @@ function calculateMetrics(orders: any[], clients: any[], services: any[]) {
   }, {} as Record<string, { name: string; revenue: number; orders: number }>)
 
   const topClients = Object.values(clientRevenue)
-    .sort((a, b) => (b as { revenue: number }).revenue - (a as { revenue: number }).revenue)
-    .slice(0, 5) as { name: string; revenue: number; orders: number }[]
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5)
 
   // Top services by usage
   const serviceUsage = orders.reduce((acc, order) => {
-    order.services?.forEach((serviceOrder: any) => {
-      const serviceId = serviceOrder.service_id
-      const serviceName = serviceOrder.service?.name || 'Unknown'
+    order.services?.forEach((serviceOrder) => {
+      const serviceId = serviceOrder.service.id
+      const serviceName = serviceOrder.service.name || 'Unknown'
       if (!acc[serviceId]) {
         acc[serviceId] = { name: serviceName, usage: 0, revenue: 0 }
       }
       acc[serviceId].usage += serviceOrder.quantity || 0
-      acc[serviceId].revenue += (serviceOrder.service?.price || 0) * (serviceOrder.quantity || 0)
+      acc[serviceId].revenue += (serviceOrder.service.price || 0) * (serviceOrder.quantity || 0)
     })
     return acc
   }, {} as Record<string, { name: string; usage: number; revenue: number }>)
 
   const topServices = Object.values(serviceUsage)
-    .sort((a, b) => (b as { usage: number }).usage - (a as { usage: number }).usage)
-    .slice(0, 5) as { name: string; usage: number; revenue: number }[]
+    .sort((a, b) => b.usage - a.usage)
+    .slice(0, 5)
 
   // Monthly revenue data for chart
   const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
@@ -168,7 +202,7 @@ export default async function AnalyticsPage() {
   }
 
   const { orders, clients, services } = await getAnalyticsData(user.id)
-  const metrics = calculateMetrics(orders, clients, services)
+  const metrics = calculateMetrics(orders)
 
   const statCards = [
     {
@@ -301,7 +335,7 @@ export default async function AnalyticsPage() {
               {Object.entries(metrics.paymentBreakdown).map(([status, count]) => (
                 <div key={status} className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">{status}</span>
-                  <span className="font-medium">{count as number}</span>
+                  <span className="font-medium">{count}</span>
                 </div>
               ))}
             </div>
@@ -320,7 +354,7 @@ export default async function AnalyticsPage() {
               {orders.slice(0, 5).map((order) => (
                 <div key={order.id} className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-medium">{(order.client as any)?.name || 'Unknown Client'}</p>
+                    <p className="text-sm font-medium">{order.client.name || 'Unknown Client'}</p>
                     <p className="text-xs text-muted-foreground">{formatDate(order.created_at)}</p>
                   </div>
                   <span className="text-sm font-medium">{formatCurrency(order.order_amount)}</span>

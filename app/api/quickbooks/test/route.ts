@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('QuickBooks test endpoint called')
     
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Test database connection
-    const { data: testData, error: testError } = await supabase
+    const { error: testError } = await supabase
       .from('quickbooks_integrations')
       .select('count')
       .limit(1)
