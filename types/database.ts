@@ -202,52 +202,6 @@ export interface Database {
           created_at?: string
         }
       }
-      tags: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          color: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          color?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          color?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      client_tags: {
-        Row: {
-          id: string
-          client_id: string
-          tag_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          client_id: string
-          tag_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          client_id?: string
-          tag_id?: string
-          created_at?: string
-        }
-      }
       quickbooks_integrations: {
         Row: {
           id: string
@@ -290,6 +244,4 @@ export type Client = Database['public']['Tables']['clients']['Row']
 export type Service = Database['public']['Tables']['services']['Row']
 export type WorkOrder = Database['public']['Tables']['work_orders']['Row']
 export type WorkOrderService = Database['public']['Tables']['work_order_services']['Row']
-export type Tag = Database['public']['Tables']['tags']['Row']
-export type ClientTag = Database['public']['Tables']['client_tags']['Row']
 export type QuickBooksIntegration = Database['public']['Tables']['quickbooks_integrations']['Row'] 

@@ -3,8 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
-    console.log('QuickBooks test endpoint called')
-    
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -22,19 +20,12 @@ export async function GET() {
       supabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     }
 
-    console.log('Environment check:', envCheck)
-
     // Check if user has QuickBooks integration
     const { data: integration, error: integrationError } = await supabase
       .from('quickbooks_integrations')
       .select('*')
       .eq('user_id', user.id)
       .single()
-
-    console.log('Integration check:', { 
-      hasIntegration: !!integration, 
-      error: integrationError?.message 
-    })
 
     const integrationStatus = {
       connected: !!integration,
@@ -98,10 +89,8 @@ export async function GET() {
       timestamp: new Date().toISOString()
     }
 
-    console.log('Test result:', result)
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Test endpoint error:', error)
     return NextResponse.json({ 
       error: 'Test failed',
       details: error instanceof Error ? error.message : 'Unknown error',

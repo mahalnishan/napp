@@ -46,7 +46,6 @@ async function handleInvoiceChange(entity: { id: string; name: string }) {
       .single()
 
     if (!order) {
-      console.log(`No order found for QuickBooks invoice ${invoiceId}`)
       return
     }
 
@@ -58,7 +57,6 @@ async function handleInvoiceChange(entity: { id: string; name: string }) {
       .single()
 
     if (!integration) {
-      console.log(`No QuickBooks integration found for user ${order.user_id}`)
       return
     }
 
@@ -94,10 +92,9 @@ async function handleInvoiceChange(entity: { id: string; name: string }) {
           .eq('user_id', order.user_id)
 
         if (updateError) {
-          console.error('Failed to update tokens in webhook:', updateError)
+          // Failed to update tokens
         }
       } else {
-        console.error('Failed to refresh token in webhook')
         return
       }
     }
@@ -136,15 +133,11 @@ async function handleInvoiceChange(entity: { id: string; name: string }) {
           .eq('id', order.id)
 
         if (updateOrderError) {
-          console.error('Failed to update order payment status:', updateOrderError)
-        } else {
-          console.log(`Updated order ${order.id} payment status to ${newPaymentStatus}`)
+          // Failed to update order payment status
         }
       }
-    } else {
-      console.error('Failed to fetch invoice from QuickBooks:', await invoiceResponse.text())
     }
   } catch (error) {
-    console.error('Error handling invoice change:', error)
+    // Error handling invoice change
   }
 } 

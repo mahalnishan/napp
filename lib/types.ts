@@ -67,22 +67,6 @@ export interface WorkOrderService {
   created_at: string
 }
 
-export interface Tag {
-  id: string
-  user_id: string
-  name: string
-  color: string
-  created_at: string
-  updated_at: string
-}
-
-export interface ClientTag {
-  id: string
-  client_id: string
-  tag_id: string
-  created_at: string
-}
-
 export interface QuickBooksIntegration {
   id: string
   user_id: string
@@ -107,5 +91,4 @@ export interface WorkOrderWithDetails extends WorkOrder {
   client: Client
   worker?: Worker
   services: (WorkOrderService & { service: Service })[]
-  tags: Tag[]
 } 

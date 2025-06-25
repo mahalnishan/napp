@@ -52,7 +52,7 @@ async function getAnalyticsData(userId: string) {
   return { orders: orders || [], clients: clients || [], services: services || [] }
 }
 
-function calculateMetrics(orders: any[], clients: any[], services: any[]) {
+function calculateMetrics(orders: any[]) {
   const now = new Date()
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
@@ -163,8 +163,6 @@ function calculateMetrics(orders: any[], clients: any[], services: any[]) {
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [metrics, setMetrics] = useState<any>(null)
-  const [clients, setClients] = useState<any[]>([])
-  const [services, setServices] = useState<any[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -177,11 +175,9 @@ export default function AnalyticsPage() {
         }
 
         const { orders, clients: clientsData, services: servicesData } = await getAnalyticsData(user.id)
-        const metricsData = calculateMetrics(orders, clientsData, servicesData)
+        const metricsData = calculateMetrics(orders)
         
         setMetrics(metricsData)
-        setClients(clientsData)
-        setServices(servicesData)
       } catch (error) {
         console.error('Error fetching analytics data:', error)
       } finally {
@@ -225,13 +221,13 @@ export default function AnalyticsPage() {
     },
     {
       title: 'Active Clients',
-      value: clients.length.toString(),
+      value: metrics.topClients.length.toString(),
       icon: Users,
       description: 'Total clients'
     },
     {
       title: 'Services',
-      value: services.length.toString(),
+      value: metrics.topServices.length.toString(),
       icon: Package,
       description: 'Available services'
     }

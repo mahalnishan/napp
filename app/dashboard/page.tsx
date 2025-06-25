@@ -159,7 +159,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening with your work orders.</p>
         </div>
         <Link href="/dashboard/orders/new">
-          <Button className="hover-lift">
+          <Button>
             <Plus className="mr-2 h-4 w-4" />
             New Order
           </Button>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
         {statCards.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.title} className="hover-lift">
+            <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <Icon className="h-4 w-4 text-muted-foreground" />
@@ -192,7 +192,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/dashboard/orders/new">
-          <Card className="hover-lift cursor-pointer">
+          <Card className="cursor-pointer">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-primary/10 rounded-lg">
@@ -208,7 +208,7 @@ export default function DashboardPage() {
         </Link>
         
         <Link href="/dashboard/clients">
-          <Card className="hover-lift cursor-pointer">
+          <Card className="cursor-pointer">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-green-500/10 rounded-lg">
@@ -224,7 +224,7 @@ export default function DashboardPage() {
         </Link>
         
         <Link href="/dashboard/services">
-          <Card className="hover-lift cursor-pointer">
+          <Card className="cursor-pointer">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-purple-500/10 rounded-lg">
@@ -241,7 +241,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Orders */}
-      <Card className="hover-lift">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

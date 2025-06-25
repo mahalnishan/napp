@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
@@ -25,18 +25,13 @@ export async function GET() {
 
 export async function POST() {
   try {
-    console.log('QuickBooks auth POST request received')
-    
     const supabase = await createClient()
     
     const {
       data: { user },
     } = await supabase.auth.getUser()
 
-    console.log('User check in auth:', { hasUser: !!user, userId: user?.id })
-
     if (!user) {
-      console.error('No authenticated user found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -45,15 +40,7 @@ export async function POST() {
     const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET
     const redirectUri = process.env.QUICKBOOKS_REDIRECT_URI
 
-    console.log('Environment variables in auth:', {
-      hasClientId: !!clientId,
-      hasClientSecret: !!clientSecret,
-      hasRedirectUri: !!redirectUri,
-      redirectUri
-    })
-
     if (!clientId || !clientSecret || !redirectUri) {
-      console.error('Missing QuickBooks configuration')
       return NextResponse.json(
         { error: 'QuickBooks configuration missing' },
         { status: 500 }
@@ -63,11 +50,8 @@ export async function POST() {
     // Generate OAuth URL
     const authUrl = `https://appcenter.intuit.com/connect/oauth2?client_id=${clientId}&response_type=code&scope=com.intuit.quickbooks.accounting&redirect_uri=${encodeURIComponent(redirectUri)}&state=${user.id}`
 
-    console.log('Generated auth URL:', authUrl)
-
     return NextResponse.json({ authUrl })
   } catch (error) {
-    console.error('QuickBooks auth error:', error)
     return NextResponse.json(
       { error: 'Failed to generate auth URL' },
       { status: 500 }

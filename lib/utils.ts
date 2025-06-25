@@ -23,14 +23,6 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date))
 }
 
-export function formatDateOnly(date: string | Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(date))
-}
-
 // Ensure user record exists in public.users table
 export async function ensureUserRecord(userId: string, userEmail: string) {
   const supabase = createClient()

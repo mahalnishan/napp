@@ -82,14 +82,12 @@ export async function GET() {
     }
 
     const companyData = await companyResponse.json()
-    console.log('Company data received:', JSON.stringify(companyData, null, 2))
 
     return NextResponse.json({ 
       company: companyData.CompanyInfo,
       message: 'Company information retrieved successfully'
     })
   } catch (error) {
-    console.error('Company info error:', error)
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

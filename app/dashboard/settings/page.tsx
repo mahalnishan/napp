@@ -5,12 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Save, X, Settings, Link as LinkIcon, Unlink, CheckCircle, AlertCircle, Palette, FileText, Building2, User, Calendar, Upload, Key, Users } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Settings, Link as LinkIcon, Unlink, CheckCircle, AlertCircle, FileText, Building2, User, Key, Users } from 'lucide-react'
 import { Worker } from '@/lib/types'
-import { ensureUserRecord } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
-import Link from 'next/link'
 
 interface UserProfile {
   id: string
@@ -263,30 +260,6 @@ export default function SettingsPage() {
     setShowWorkerForm(false)
   }
 
-  const fetchProfile = async () => {
-    if (!user) return
-
-    try {
-      const supabase = createClient()
-      const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (profile) {
-        setProfileData({
-          name: profile.name || '',
-          phone: profile.phone || '',
-          avatar_url: profile.avatar_url || ''
-        })
-        setAvatarPreview(profile.avatar_url || '')
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error)
-    }
-  }
-
   const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value })
   }
@@ -405,7 +378,7 @@ export default function SettingsPage() {
   const testStorageConnection = async () => {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('avatars')
         .list('', { limit: 1 })
 

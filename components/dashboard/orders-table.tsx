@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Edit, Trash2, Eye, FileText, CheckCircle, AlertCircle } from 'lucide-react'
+import { Search, Edit, Eye, FileText, CheckCircle, AlertCircle } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { WorkOrderWithDetails } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
@@ -221,7 +221,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">
-                    {order.services.map((wos, index) => (
+                    {order.services.map((wos) => (
                       <div key={wos.id}>
                         {wos.quantity}x {wos.service.name}
                       </div>

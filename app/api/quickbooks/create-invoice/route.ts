@@ -103,8 +103,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('Creating QuickBooks invoice with data:', JSON.stringify(invoiceData, null, 2))
-
     // Use sandbox URL for development
     const quickbooksResponse = await fetch(
       `https://sandbox-quickbooks.api.intuit.com/v3/company/${integration.realm_id}/invoice`,
@@ -119,12 +117,8 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    console.log('QuickBooks response status:', quickbooksResponse.status)
-
     if (!quickbooksResponse.ok) {
       const errorText = await quickbooksResponse.text()
-      console.error('QuickBooks API error:', errorText)
-      console.error('Response headers:', Object.fromEntries(quickbooksResponse.headers.entries()))
       
       return NextResponse.json({ 
         error: 'Failed to create invoice in QuickBooks',
@@ -134,8 +128,6 @@ export async function POST(request: NextRequest) {
     }
 
     const quickbooksData = await quickbooksResponse.json()
-    console.log('QuickBooks response data:', JSON.stringify(quickbooksData, null, 2))
-    
     const invoiceId = quickbooksData.Invoice.Id
 
     // Update the order with the QuickBooks invoice ID
@@ -150,7 +142,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ invoiceId })
   } catch (error) {
-    console.error('Create invoice error:', error)
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

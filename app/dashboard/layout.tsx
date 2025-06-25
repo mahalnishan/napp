@@ -24,8 +24,8 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
-  const [collapsed, setCollapsed] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     const checkUser = async () => {

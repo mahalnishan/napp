@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - NAPP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
+        }
+
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .retry-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .retry-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>You're Offline</h1>
+        <p>
+            It looks like you've lost your internet connection. 
+            Don't worry - you can still view cached data and some features will work offline.
+        </p>
+        
+        <button class="retry-button" onclick="checkConnection()">
+            <span id="retry-text">Try Again</span>
+            <span id="retry-spinner" class="spinner hidden"></span>
+        </button>
+        
+        <div class="status" id="status">
+            Checking connection...
+        </div>
+    </div>
+
+    <script>
+        let isChecking = false;
+
+        async function checkConnection() {
+            if (isChecking) return;
+            
+            isChecking = true;
+            const button = document.querySelector('.retry-button');
+            const text = document.getElementById('retry-text');
+            const spinner = document.getElementById('retry-spinner');
+            const status = document.getElementById('status');
+            
+            // Show loading state
+            text.textContent = 'Checking...';
+            spinner.classList.remove('hidden');
+            button.disabled = true;
+            status.textContent = 'Checking your connection...';
+            
+            try {
+                // Try to fetch a small resource to test connectivity
+                const response = await fetch('/api/health', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    status.textContent = 'Connection restored! Redirecting...';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                status.textContent = 'Still offline. Please check your internet connection.';
+                text.textContent = 'Try Again';
+                spinner.classList.add('hidden');
+                button.disabled = false;
+            } finally {
+                isChecking = false;
+            }
+        }
+
+        // Check connection on page load
+        window.addEventListener('load', () => {
+            setTimeout(checkConnection, 1000);
+        });
+
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            document.getElementById('status').textContent = 'Connection restored! Redirecting...';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+
+        window.addEventListener('offline', () => {
+            document.getElementById('status').textContent = 'You are now offline.';
+        });
+    </script>
+</body>
+</html> 

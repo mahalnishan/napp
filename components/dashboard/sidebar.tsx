@@ -3,9 +3,8 @@
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { LogOut, Settings, Users, FileText, Calendar, Package, Home, BarChart3, User, Bell, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
+import { LogOut, Settings, Users, FileText, Package, Home, BarChart3, User, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useSidebar } from '@/app/dashboard/layout'
 import {
@@ -26,7 +25,6 @@ interface UserProfile {
 
 export function Sidebar() {
   const router = useRouter()
-  const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const { collapsed, setCollapsed } = useSidebar()

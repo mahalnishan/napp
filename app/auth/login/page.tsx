@@ -13,20 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [showDebug, setShowDebug] = useState(false)
   const router = useRouter()
-
-  // Debug function to check environment variables
-  const checkEnvironment = () => {
-    const envCheck = {
-      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      urlLength: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
-      keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0
-    }
-    console.log('Environment check:', envCheck)
-    return envCheck
-  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,35 +21,20 @@ export default function LoginPage() {
     setError('')
 
     try {
-      console.log('Starting login process...')
-      
       // Check if environment variables are available
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        console.error('Missing environment variables:', {
-          hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-          hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        })
         setError('Configuration error: Missing Supabase credentials. Please contact support.')
         return
       }
 
       const supabase = createClient()
-      console.log('Supabase client created successfully')
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      console.log('Sign in response:', { 
-        hasUser: !!data.user, 
-        error: error?.message,
-        errorCode: error?.status 
-      })
-
       if (error) {
-        console.error('Supabase auth error:', error)
-        
         // Provide more specific error messages
         if (error.message.includes('Invalid login credentials')) {
           setError('Invalid email or password. Please check your credentials and try again.')
@@ -74,15 +46,12 @@ export default function LoginPage() {
           setError(`Login failed: ${error.message}`)
         }
       } else if (data.user) {
-        console.log('Login successful, redirecting to dashboard...')
         // Successful login - redirect to dashboard
         router.push('/dashboard')
       } else {
         setError('Login failed: No user data received')
       }
     } catch (error) {
-      console.error('Login error:', error)
-      
       // Provide more specific error messages based on the error type
       if (error instanceof Error) {
         if (error.message.includes('Missing Supabase environment variables')) {
@@ -157,34 +126,6 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>
-              
-              {/* Debug section - only show in development */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => {
-                      const envCheck = checkEnvironment()
-                      setShowDebug(!showDebug)
-                      if (!envCheck.hasUrl || !envCheck.hasKey) {
-                        setError('Environment variables are missing. Check console for details.')
-                      }
-                    }}
-                    className="w-full"
-                  >
-                    {showDebug ? 'Hide Debug' : 'Debug Environment'}
-                  </Button>
-                  
-                  {showDebug && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
-                      <div>URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing'}</div>
-                      <div>Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing'}</div>
-                    </div>
-                  )}
-                </div>
-              )}
             </form>
           </CardContent>
         </Card>
