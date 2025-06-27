@@ -360,18 +360,37 @@ export default function SettingsPage() {
   }
 
   const handleDeleteAccount = async () => {
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return
+    if (!confirm('Are you sure you want to delete your account? This will permanently delete all your data including orders, clients, services, and workers. This action cannot be undone.')) return
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
-      if (error) throw error
+      setLoading(true)
+      setError('')
+      setMessage('')
+
+      const response = await fetch('/api/user/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      // Success - show message and redirect
+      setMessage('Account deleted successfully. Redirecting...')
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 2000)
       
-      // Redirect to home page
-      window.location.href = '/'
     } catch (error) {
       console.error('Account deletion error:', error)
-      setError('Failed to delete account')
+      setError(error instanceof Error ? error.message : 'Failed to delete account. Please try again or contact support.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -658,9 +677,14 @@ export default function SettingsPage() {
                 <Key className="mr-2 h-4 w-4" />
                 Reset Password
               </Button>
-              <Button variant="outline" onClick={handleDeleteAccount} className="text-red-600 hover:text-red-700">
+              <Button 
+                variant="outline" 
+                onClick={handleDeleteAccount} 
+                disabled={loading}
+                className="text-red-600 hover:text-red-700"
+              >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Account
+                {loading ? 'Deleting Account...' : 'Delete Account'}
               </Button>
             </div>
           </CardContent>
