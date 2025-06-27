@@ -44,14 +44,13 @@ A full-stack work order management application built with Next.js and Supabase. 
 ### ⚙️ Settings
 - QuickBooks OAuth integration
 - Account preferences
-- Default order status and timezone
-- Notification settings
+- Default order status
 - Workers management
 
 ### 🔗 QuickBooks Integration
 - OAuth2 authentication
 - Automatic invoice creation
-- Payment status synchronization via webhooks
+- Payment status synchronization
 - Token refresh handling
 
 ## Tech Stack
@@ -151,7 +150,6 @@ QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id
 QUICKBOOKS_CLIENT_SECRET=your_quickbooks_client_secret
 NEXT_PUBLIC_QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id
 QUICKBOOKS_REDIRECT_URI=http://localhost:3000/api/quickbooks/callback
-QUICKBOOKS_WEBHOOK_SECRET=your_webhook_secret
 ```
 
 ### 6. Run the development server
@@ -195,7 +193,6 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
    QUICKBOOKS_CLIENT_SECRET=your_quickbooks_client_secret
    NEXT_PUBLIC_QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id
    QUICKBOOKS_REDIRECT_URI=https://your-vercel-domain.vercel.app/api/quickbooks/callback
-   QUICKBOOKS_WEBHOOK_SECRET=your_webhook_secret
    ```
 
 4. **Deploy**
@@ -223,13 +220,11 @@ If you encounter build errors:
 The application uses the following main tables:
 
 - **users**: Extended Supabase auth users
-- **workers**: Team members who can be assigned to orders
+- **workers**: Workers who can be assigned to orders
 - **clients**: Customer contact information
 - **services**: Service offerings with pricing
 - **work_orders**: Main orders with scheduling and status
 - **work_order_services**: Junction table for order services
-- **tags**: Custom tags for organizing clients
-- **client_tags**: Junction table for client tagging
 - **quickbooks_integrations**: OAuth tokens and connection info
 
 ## API Routes

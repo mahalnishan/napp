@@ -88,16 +88,74 @@ export default function NewOrderPage() {
     setLoading(true)
 
     try {
+      // Check environment variables
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error('Supabase environment variables are not configured. Please check your .env.local file.')
+      }
+
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
+      console.log('User authenticated:', user.id)
+
       // Ensure user record exists before creating order
       await ensureUserRecord(user.id, user.email || '')
+      console.log('User record ensured')
 
       if (!selectedClient) {
         alert('Please select a client')
         return
+      }
+
+      // Validate client exists
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', selectedClient)
+        .eq('user_id', user.id)
+        .single()
+
+      if (clientError || !clientData) {
+        throw new Error('Selected client not found or access denied')
+      }
+
+      // Validate all services exist
+      for (const serviceOrder of orderServices) {
+        const { data: serviceData, error: serviceError } = await supabase
+          .from('services')
+          .select('id')
+          .eq('id', serviceOrder.serviceId)
+          .eq('user_id', user.id)
+          .single()
+
+        if (serviceError || !serviceData) {
+          throw new Error(`Service with ID ${serviceOrder.serviceId} not found or access denied`)
+        }
+      }
+
+      if (!scheduleDateTime) {
+        alert('Please select a schedule date and time')
+        return
+      }
+
+      if (assignedToType === 'Worker' && !assignedToId) {
+        alert('Please select a worker when assigning to worker')
+        return
+      }
+
+      // Validate worker exists if assigned
+      if (assignedToType === 'Worker' && assignedToId) {
+        const { data: workerData, error: workerError } = await supabase
+          .from('workers')
+          .select('id')
+          .eq('id', assignedToId)
+          .eq('user_id', user.id)
+          .single()
+
+        if (workerError || !workerData) {
+          throw new Error('Selected worker not found or access denied')
+        }
       }
 
       if (orderServices.length === 0) {
@@ -105,26 +163,111 @@ export default function NewOrderPage() {
         return
       }
 
+      // Validate that all services have valid serviceId
+      const invalidServices = orderServices.filter(os => !os.serviceId)
+      if (invalidServices.length > 0) {
+        alert('Please select a service for all items')
+        return
+      }
+
       const totalAmount = calculateTotal()
 
-      // Create work order
-      const { data: order, error: orderError } = await supabase
+      // Format the date properly for PostgreSQL
+      const formattedDateTime = new Date(scheduleDateTime).toISOString()
+
+      // Test database connection first
+      const { data: testData, error: testError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (testError) {
+        console.error('Database connection test failed:', testError)
+        throw new Error(`Database connection failed: ${testError.message}`)
+      }
+
+      console.log('Database connection test passed')
+
+      // Test creating a simple work order first
+      const testOrderData = {
+        user_id: user.id,
+        client_id: selectedClient,
+        assigned_to_type: 'Self' as const,
+        assigned_to_id: null,
+        status: 'Pending' as const,
+        schedule_date_time: formattedDateTime,
+        order_amount: 0,
+        order_payment_status: 'Unpaid' as const,
+        notes: 'Test order'
+      }
+
+      console.log('Testing simple order creation with:', testOrderData)
+
+      const { data: testOrder, error: testOrderError } = await supabase
         .from('work_orders')
-        .insert({
-          user_id: user.id,
-          client_id: selectedClient,
-          assigned_to_type: assignedToType,
-          assigned_to_id: assignedToType === 'Worker' ? assignedToId : null,
-          status,
-          schedule_date_time: scheduleDateTime,
-          order_amount: totalAmount,
-          order_payment_status: paymentStatus,
-          notes,
-        })
+        .insert(testOrderData)
         .select()
         .single()
 
-      if (orderError) throw orderError
+      if (testOrderError) {
+        console.error('Test order creation failed:', testOrderError)
+        throw new Error(`Test order creation failed: ${testOrderError.message}`)
+      }
+
+      console.log('Test order created successfully:', testOrder.id)
+
+      // Delete the test order
+      await supabase.from('work_orders').delete().eq('id', testOrder.id)
+      console.log('Test order deleted')
+
+      // Create work order
+      const orderData = {
+        user_id: user.id,
+        client_id: selectedClient,
+        assigned_to_type: assignedToType,
+        assigned_to_id: assignedToType === 'Worker' ? assignedToId : null,
+        status,
+        schedule_date_time: formattedDateTime,
+        order_amount: parseFloat(totalAmount.toFixed(2)),
+        order_payment_status: paymentStatus,
+        notes: notes || null,
+      }
+
+      console.log('Creating order with data:', orderData)
+      console.log('Order data types:', {
+        user_id: typeof orderData.user_id,
+        client_id: typeof orderData.client_id,
+        assigned_to_type: typeof orderData.assigned_to_type,
+        assigned_to_id: typeof orderData.assigned_to_id,
+        status: typeof orderData.status,
+        schedule_date_time: typeof orderData.schedule_date_time,
+        order_amount: typeof orderData.order_amount,
+        order_payment_status: typeof orderData.order_payment_status,
+        notes: typeof orderData.notes
+      })
+
+      const { data: order, error: orderError } = await supabase
+        .from('work_orders')
+        .insert(orderData)
+        .select()
+        .single()
+
+      if (orderError) {
+        console.error('Order creation error details:', {
+          message: orderError.message,
+          details: orderError.details,
+          hint: orderError.hint,
+          code: orderError.code
+        })
+        throw new Error(`Failed to create order: ${orderError.message}`)
+      }
+
+      if (!order) {
+        throw new Error('Order was not created successfully')
+      }
+
+      console.log('Order created successfully:', order.id)
 
       // Create work order services
       const workOrderServices = orderServices.map(os => ({
@@ -133,11 +276,18 @@ export default function NewOrderPage() {
         quantity: os.quantity,
       }))
 
+      console.log('Creating work order services:', workOrderServices)
+
       const { error: servicesError } = await supabase
         .from('work_order_services')
         .insert(workOrderServices)
 
-      if (servicesError) throw servicesError
+      if (servicesError) {
+        console.error('Services creation error:', servicesError)
+        // Rollback order creation if services fail
+        await supabase.from('work_orders').delete().eq('id', order.id)
+        throw new Error(`Failed to create order services: ${servicesError.message}`)
+      }
 
       // Create QuickBooks invoice if requested and connected
       if (createQuickBooksInvoice && quickbooksConnected) {
@@ -169,7 +319,8 @@ export default function NewOrderPage() {
       router.push('/dashboard/orders')
     } catch (error) {
       console.error('Error creating order:', error)
-      alert('Failed to create order')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create order'
+      alert(`Error creating order: ${errorMessage}`)
     } finally {
       setLoading(false)
     }

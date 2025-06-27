@@ -557,7 +557,7 @@ export default function SettingsPage() {
               <Users className="mr-2 h-5 w-5" />
               Workers Management
             </CardTitle>
-            <CardDescription>Manage your team members</CardDescription>
+            <CardDescription>Manage your workers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {!showWorkerForm ? (

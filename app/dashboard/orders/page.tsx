@@ -7,32 +7,52 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Search, Filter, Download, Upload } from 'lucide-react'
 import Link from 'next/link'
-import { useCachedOrders } from '@/lib/hooks/use-cached-data'
-import { VirtualTable } from '@/components/ui/virtual-list'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  
-  const {
-    orders,
-    loading,
-    error,
-    refreshing,
-    refetch,
-    createOrder,
-    updateOrder,
-    deleteOrder,
-    optimisticUpdates,
-    isReconciling
-  } = useCachedOrders({
-    maxAge: 2 * 60 * 1000, // 2 minutes
-    enableOptimisticUpdates: true,
-    enableCoalescing: true
-  })
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('work_orders')
+        .select(`
+          *,
+          client:clients(*),
+          worker:workers(*),
+          services:work_order_services(
+            *,
+            service:services(*)
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setOrders(data || [])
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching orders:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch orders')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchOrders()
+  }, [])
 
   // Filter and sort orders
   const filteredOrders = orders
@@ -72,84 +92,6 @@ export default function OrdersPage() {
         : (bValue > aValue ? 1 : -1)
     })
 
-  const columns = [
-    {
-      key: 'id',
-      header: 'Order ID',
-      width: '120px',
-      render: (order: any) => (
-        <Link 
-          href={`/dashboard/orders/${order.id}`}
-          className="text-primary hover:underline font-mono text-xs"
-        >
-          {order.id.slice(0, 8)}...
-        </Link>
-      )
-    },
-    {
-      key: 'client',
-      header: 'Client',
-      width: '200px',
-      render: (order: any) => (
-        <div>
-          <div className="font-medium">{order.client?.name || 'Unknown'}</div>
-          <div className="text-xs text-muted-foreground">{order.client?.email}</div>
-        </div>
-      )
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      width: '120px',
-      render: (order: any) => (
-        <span className={`
-          px-2 py-1 rounded-full text-xs font-medium
-          ${order.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
-          ${order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : ''}
-          ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-          ${order.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
-        `}>
-          {order.status.replace('_', ' ')}
-        </span>
-      )
-    },
-    {
-      key: 'total_amount',
-      header: 'Total',
-      width: '120px',
-      render: (order: any) => (
-        <div className="font-medium">
-          {formatCurrency(order.total_amount || 0)}
-        </div>
-      )
-    },
-    {
-      key: 'created_at',
-      header: 'Created',
-      width: '150px',
-      render: (order: any) => (
-        <div className="text-sm">
-          {formatDate(order.created_at)}
-        </div>
-      )
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      width: '120px',
-      render: (order: any) => (
-        <div className="flex space-x-2">
-          <Link href={`/dashboard/orders/${order.id}`}>
-            <Button size="sm" variant="outline">View</Button>
-          </Link>
-          <Link href={`/dashboard/orders/${order.id}/edit`}>
-            <Button size="sm" variant="outline">Edit</Button>
-          </Link>
-        </div>
-      )
-    }
-  ]
-
   const handleSort = (key: string) => {
     if (sortBy === key) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -161,12 +103,11 @@ export default function OrdersPage() {
 
   const handleExport = () => {
     const csvContent = [
-      ['Order ID', 'Client', 'Status', 'Total', 'Created Date'],
+      ['Client', 'Status', 'Total', 'Created Date'],
       ...filteredOrders.map(order => [
-        order.id,
         order.client?.name || '',
         order.status,
-        order.total_amount || 0,
+        order.order_amount || 0,
         formatDate(order.created_at)
       ])
     ].map(row => row.join(',')).join('\n')
@@ -178,6 +119,46 @@ export default function OrdersPage() {
     a.download = `orders-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     window.URL.revokeObjectURL(url)
+  }
+
+  const handleDelete = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      
+      // Delete work order services first (due to foreign key constraint)
+      const { error: servicesError } = await supabase
+        .from('work_order_services')
+        .delete()
+        .eq('work_order_id', orderId)
+
+      if (servicesError) {
+        console.error('Error deleting order services:', servicesError)
+        alert('Failed to delete order services')
+        return
+      }
+
+      // Delete the work order
+      const { error: orderError } = await supabase
+        .from('work_orders')
+        .delete()
+        .eq('id', orderId)
+
+      if (orderError) {
+        console.error('Error deleting order:', orderError)
+        alert('Failed to delete order')
+        return
+      }
+
+      // Refresh the orders list
+      fetchOrders()
+    } catch (error) {
+      console.error('Error deleting order:', error)
+      alert('Failed to delete order')
+    }
   }
 
   if (loading) {
@@ -196,30 +177,27 @@ export default function OrdersPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={refetch}>Try Again</Button>
+          <Button onClick={fetchOrders}>Try Again</Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">
-            Manage your work orders and track their progress
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">Work Orders</h1>
+          <p className="text-sm text-muted-foreground">Manage and track your work orders</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
+        <div className="flex space-x-2">
+          <Button onClick={handleExport} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
           <Link href="/dashboard/orders/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
               New Order
             </Button>
           </Link>
@@ -228,26 +206,23 @@ export default function OrdersPage() {
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-9"
                 />
               </div>
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md bg-background"
+              className="px-3 py-2 border border-input bg-background rounded-md text-sm h-9"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -255,53 +230,93 @@ export default function OrdersPage() {
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <Button
-              variant="outline"
-              onClick={refetch}
-              disabled={refreshing}
-            >
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Orders Table */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>All Orders</CardTitle>
-              <CardDescription>
-                {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}
-                {isReconciling && ' • Syncing...'}
-              </CardDescription>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {optimisticUpdates.size > 0 && `${optimisticUpdates.size} pending update${optimisticUpdates.size !== 1 ? 's' : ''}`}
-            </div>
-          </div>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Orders ({filteredOrders.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          {filteredOrders.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">No orders found</p>
-              <Link href="/dashboard/orders/new">
-                <Button>Create your first order</Button>
-              </Link>
-            </div>
-          ) : (
-            <VirtualTable
-              items={filteredOrders}
-              height={600}
-              rowHeight={80}
-              columns={columns}
-              onEndReached={() => {
-                // Load more orders if needed
-                console.log('End reached - could load more orders')
-              }}
-            />
-          )}
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('client')}>
+                    Client {sortBy === 'client' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
+                    Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('order_amount')}>
+                    Total {sortBy === 'order_amount' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('created_at')}>
+                    Created {sortBy === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-left p-3 text-sm font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => (
+                  <tr key={order.id} className="border-b hover:bg-muted/30">
+                    <td className="p-3">
+                      <div>
+                        <div className="font-medium text-sm">{order.client?.name || 'Unknown'}</div>
+                        <div className="text-xs text-muted-foreground">{order.client?.email}</div>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <span className={`
+                        px-2 py-1 rounded-full text-xs font-medium
+                        ${order.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                        ${order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : ''}
+                        ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                        ${order.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                      `}>
+                        {order.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="font-medium text-sm">
+                        {formatCurrency(order.order_amount || 0)}
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(order.created_at)}
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex space-x-1">
+                        <Link href={`/dashboard/orders/${order.id}`}>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">View</Button>
+                        </Link>
+                        <Link href={`/dashboard/orders/${order.id}/edit`}>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">Edit</Button>
+                        </Link>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                          onClick={() => handleDelete(order.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredOrders.length === 0 && (
+              <div className="text-center py-6">
+                <p className="text-muted-foreground text-sm">No orders found</p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

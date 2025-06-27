@@ -47,23 +47,13 @@ Convert these into Supabase-compatible Postgres tables:
   - QuickBooksInvoiceID
   - Multiple services (via junction table)
 
-### WorkOrderServices (Junction)
-- WorkOrderID, ServiceID, Quantity
+### WorkOrderServices
 
-### Tags and ClientTags
-- Standard tagging for clients
+Junction table linking work orders to services with quantities.
 
----
+### QuickBooks Integration
 
-## ⚙️ QuickBooks Integration
-
-- Allow OAuth connection for trader (use API routes or edge functions)
-- On order creation:
-  - Optionally create invoice in QuickBooks
-  - Store `QuickBooksInvoiceID`
-- Set up webhook listener to:
-  - Update `OrderPaymentStatus` when invoice is sent/paid
-- Use `.env.local` for sensitive keys
+OAuth tokens and connection info for QuickBooks API integration.
 
 ---
 
@@ -85,16 +75,6 @@ Create the following pages:
 - `/services`: CRUD for services
 - `/clients`: manage client details
 - `/settings`: OAuth connection, preferences
-
----
-
-## 🔔 Notifications
-
-Optional: Use Supabase Edge Functions or Realtime Channels for notifications when:
-
-- Order scheduled
-- Worker assigned
-- Invoice paid
 
 ---
 

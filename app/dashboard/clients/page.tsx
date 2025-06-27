@@ -124,10 +124,46 @@ export default function ClientsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this client?')) return
+    if (!confirm('Are you sure you want to delete this client? This will also delete all associated orders. This action cannot be undone.')) return
 
     try {
       const supabase = createClient()
+      
+      // First, delete all work order services for orders belonging to this client
+      const { data: orders } = await supabase
+        .from('work_orders')
+        .select('id')
+        .eq('client_id', id)
+
+      if (orders && orders.length > 0) {
+        const orderIds = orders.map(order => order.id)
+        
+        // Delete work order services for all orders of this client
+        const { error: servicesError } = await supabase
+          .from('work_order_services')
+          .delete()
+          .in('work_order_id', orderIds)
+
+        if (servicesError) {
+          console.error('Error deleting order services:', servicesError)
+          alert('Failed to delete associated order services')
+          return
+        }
+
+        // Delete all orders for this client
+        const { error: ordersError } = await supabase
+          .from('work_orders')
+          .delete()
+          .eq('client_id', id)
+
+        if (ordersError) {
+          console.error('Error deleting orders:', ordersError)
+          alert('Failed to delete associated orders')
+          return
+        }
+      }
+
+      // Finally, delete the client
       const { error } = await supabase
         .from('clients')
         .delete()
@@ -221,31 +257,31 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-600">Manage your client contacts</p>
+          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
+          <p className="text-sm text-gray-600">Manage your client contacts</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => setShowForm(true)} size="sm">
           <Plus className="mr-2 h-4 w-4" />
           Add Client
         </Button>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search clients by name, email, or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-9"
           />
         </div>
         <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-48 h-9">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -367,95 +403,115 @@ export default function ClientsPage() {
       )}
 
       {/* Clients List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredClients.map((client) => (
-          <Card key={client.id} className={!client.is_active ? 'opacity-75' : ''}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <CardTitle className="text-lg">{client.name}</CardTitle>
-                    {client.is_active ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2 mt-1">
-                    {client.client_type === 'Individual' ? (
-                      <User className="h-3 w-3 text-gray-400" />
-                    ) : (
-                      <Building2 className="h-3 w-3 text-gray-400" />
-                    )}
-                    <span className="text-xs text-gray-500">{client.client_type}</span>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleToggleStatus(client)}
-                  >
-                    {client.is_active ? 'Deactivate' : 'Activate'}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Clients ({filteredClients.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="text-left p-3 text-sm font-medium">Name</th>
+                  <th className="text-left p-3 text-sm font-medium">Email</th>
+                  <th className="text-left p-3 text-sm font-medium">Phone</th>
+                  <th className="text-left p-3 text-sm font-medium">Type</th>
+                  <th className="text-left p-3 text-sm font-medium">Status</th>
+                  <th className="text-left p-3 text-sm font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClients.map((client) => (
+                  <tr key={client.id} className={`border-b hover:bg-muted/30 ${!client.is_active ? 'opacity-75' : ''}`}>
+                    <td className="p-3">
+                      <div className="font-medium text-sm">{client.name}</div>
+                      {client.address && (
+                        <div className="text-xs text-muted-foreground truncate max-w-48" title={client.address}>
+                          <MapPin className="h-3 w-3 inline mr-1" />
+                          {client.address}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {client.email && (
+                        <a href={`mailto:${client.email}`} className="text-sm hover:text-blue-600">
+                          {client.email}
+                        </a>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {client.phone && (
+                        <a href={`tel:${client.phone}`} className="text-sm hover:text-blue-600">
+                          {client.phone}
+                        </a>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center space-x-1">
+                        {client.client_type === 'Individual' ? (
+                          <User className="h-3 w-3 text-gray-400" />
+                        ) : (
+                          <Building2 className="h-3 w-3 text-gray-400" />
+                        )}
+                        <span className="text-xs text-muted-foreground">{client.client_type}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <span className={`
+                        px-2 py-1 rounded-full text-xs font-medium
+                        ${client.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                      `}>
+                        {client.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleStatus(client)}
+                          className="h-7 px-2 text-xs"
+                        >
+                          {client.is_active ? 'Deactivate' : 'Activate'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(client)}
+                          className="h-7 px-2 text-xs"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(client.id)}
+                          className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredClients.length === 0 && (
+              <div className="text-center py-6">
+                <p className="text-muted-foreground text-sm">
+                  {searchTerm || statusFilter !== 'all' ? 'No clients found matching your criteria' : 'No clients yet'}
+                </p>
+                {!searchTerm && statusFilter === 'all' && (
+                  <Button onClick={() => setShowForm(true)} className="mt-4" size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Your First Client
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(client)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(client.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                )}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {client.email && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <Mail className="h-4 w-4 mr-2" />
-                  <a href={`mailto:${client.email}`} className="hover:text-blue-600">
-                    {client.email}
-                  </a>
-                </div>
-              )}
-              {client.phone && (
-                <div className="flex items-center text-sm text-gray-600">
-                  <Phone className="h-4 w-4 mr-2" />
-                  <a href={`tel:${client.phone}`} className="hover:text-blue-600">
-                    {client.phone}
-                  </a>
-                </div>
-              )}
-              {client.address && (
-                <div className="flex items-start text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
-                  <span>{client.address}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredClients.length === 0 && !loading && (
-        <div className="text-center py-8">
-          <div className="text-gray-500">
-            {searchTerm || statusFilter !== 'all' ? 'No clients found matching your criteria' : 'No clients yet'}
+            )}
           </div>
-          {!searchTerm && statusFilter === 'all' && (
-            <Button onClick={() => setShowForm(true)} className="mt-4">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Client
-            </Button>
-          )}
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   )
 } 

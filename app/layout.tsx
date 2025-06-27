@@ -1,9 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { registerServiceWorker } from "@/lib/sw-register";
-import { PerformanceMonitor } from "@/components/performance-monitor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,14 +74,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  manifest: "/manifest.json",
-  themeColor: "#3b82f6",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "nApp"
-  },
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -96,15 +86,19 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Register service worker on client side
-  if (typeof window !== "undefined") {
-    registerServiceWorker();
-  }
+
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -153,7 +147,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <PerformanceMonitor />
         </ThemeProvider>
       </body>
     </html>

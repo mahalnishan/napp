@@ -54,7 +54,7 @@ export default function HomePage() {
     {
       icon: FileText,
       title: 'Work Order Management',
-      description: 'Create, track, and manage work orders with ease. Assign to team members and track progress in real-time.'
+      description: 'Create, track, and manage work orders with ease. Assign to workers and track progress in real-time.'
     },
     {
       icon: Users,
