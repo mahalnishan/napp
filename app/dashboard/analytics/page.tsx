@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { 
   BarChart3, 
   TrendingUp, 
@@ -12,7 +15,10 @@ import {
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
-  Activity
+  Activity,
+  Filter,
+  X,
+  RefreshCw
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { AnalyticsChart } from '@/components/analytics-chart'
@@ -52,46 +58,155 @@ async function getAnalyticsData(userId: string) {
   return { orders: orders || [], clients: clients || [], services: services || [] }
 }
 
-function calculateMetrics(orders: any[]) {
+function calculateMetrics(orders: any[], filters: any) {
   const now = new Date()
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
-
-  // Current month orders
-  const currentMonthOrders = orders.filter(order => 
-    new Date(order.created_at) >= thirtyDaysAgo
-  )
   
-  // Previous month orders
-  const previousMonthOrders = orders.filter(order => {
+  // Apply date filters
+  let filteredOrders = [...orders]
+  
+  if (filters.dateRange !== 'all') {
+    const startDate = new Date()
+    switch (filters.dateRange) {
+      case '7d':
+        startDate.setDate(now.getDate() - 7)
+        break
+      case '30d':
+        startDate.setDate(now.getDate() - 30)
+        break
+      case '90d':
+        startDate.setDate(now.getDate() - 90)
+        break
+      case '6m':
+        startDate.setMonth(now.getMonth() - 6)
+        break
+      case '1y':
+        startDate.setFullYear(now.getFullYear() - 1)
+        break
+      case 'custom':
+        if (filters.startDate && filters.endDate) {
+          const customStart = new Date(filters.startDate)
+          const customEnd = new Date(filters.endDate)
+          customEnd.setHours(23, 59, 59, 999)
+          filteredOrders = filteredOrders.filter(order => {
+            const orderDate = new Date(order.created_at)
+            return orderDate >= customStart && orderDate <= customEnd
+          })
+        }
+        break
+    }
+    
+    if (filters.dateRange !== 'custom') {
+      filteredOrders = filteredOrders.filter(order => 
+        new Date(order.created_at) >= startDate
+      )
+    }
+  }
+  
+  // Apply status filter
+  if (filters.status !== 'all') {
+    filteredOrders = filteredOrders.filter(order => order.status === filters.status)
+  }
+  
+  // Apply payment status filter
+  if (filters.paymentStatus !== 'all') {
+    filteredOrders = filteredOrders.filter(order => order.order_payment_status === filters.paymentStatus)
+  }
+  
+  // Apply client filter
+  if (filters.clientId !== 'all') {
+    filteredOrders = filteredOrders.filter(order => order.client_id === filters.clientId)
+  }
+  
+  // Apply client type filter
+  if (filters.clientType !== 'all') {
+    filteredOrders = filteredOrders.filter(order => 
+      (order.client as any)?.client_type === filters.clientType
+    )
+  }
+  
+  // Apply minimum amount filter
+  if (filters.minAmount) {
+    filteredOrders = filteredOrders.filter(order => 
+      (order.order_amount || 0) >= parseFloat(filters.minAmount)
+    )
+  }
+  
+  // Apply maximum amount filter
+  if (filters.maxAmount) {
+    filteredOrders = filteredOrders.filter(order => 
+      (order.order_amount || 0) <= parseFloat(filters.maxAmount)
+    )
+  }
+
+  // Calculate comparison periods based on selected date range
+  let comparisonStartDate = new Date()
+  let comparisonEndDate = new Date()
+  
+  if (filters.dateRange === 'custom' && filters.startDate && filters.endDate) {
+    const customStart = new Date(filters.startDate)
+    const customEnd = new Date(filters.endDate)
+    const duration = customEnd.getTime() - customStart.getTime()
+    
+    comparisonEndDate = new Date(customStart)
+    comparisonStartDate = new Date(customStart.getTime() - duration)
+  } else {
+    switch (filters.dateRange) {
+      case '7d':
+        comparisonEndDate.setDate(now.getDate() - 7)
+        comparisonStartDate.setDate(now.getDate() - 14)
+        break
+      case '30d':
+        comparisonEndDate.setDate(now.getDate() - 30)
+        comparisonStartDate.setDate(now.getDate() - 60)
+        break
+      case '90d':
+        comparisonEndDate.setDate(now.getDate() - 90)
+        comparisonStartDate.setDate(now.getDate() - 180)
+        break
+      case '6m':
+        comparisonEndDate.setMonth(now.getMonth() - 6)
+        comparisonStartDate.setMonth(now.getMonth() - 12)
+        break
+      case '1y':
+        comparisonEndDate.setFullYear(now.getFullYear() - 1)
+        comparisonStartDate.setFullYear(now.getFullYear() - 2)
+        break
+      default:
+        comparisonEndDate.setDate(now.getDate() - 30)
+        comparisonStartDate.setDate(now.getDate() - 60)
+    }
+  }
+  
+  // Get comparison period orders
+  const comparisonOrders = orders.filter(order => {
     const orderDate = new Date(order.created_at)
-    return orderDate >= sixtyDaysAgo && orderDate < thirtyDaysAgo
+    return orderDate >= comparisonStartDate && orderDate <= comparisonEndDate
   })
 
   // Revenue calculations
-  const currentMonthRevenue = currentMonthOrders.reduce((sum, order) => sum + (order.order_amount || 0), 0)
-  const previousMonthRevenue = previousMonthOrders.reduce((sum, order) => sum + (order.order_amount || 0), 0)
+  const currentRevenue = filteredOrders.reduce((sum, order) => sum + (order.order_amount || 0), 0)
+  const comparisonRevenue = comparisonOrders.reduce((sum, order) => sum + (order.order_amount || 0), 0)
   const totalRevenue = orders.reduce((sum, order) => sum + (order.order_amount || 0), 0)
 
   // Order counts
-  const currentMonthCount = currentMonthOrders.length
-  const previousMonthCount = previousMonthOrders.length
+  const currentCount = filteredOrders.length
+  const comparisonCount = comparisonOrders.length
   const totalOrders = orders.length
 
   // Status breakdown
-  const statusBreakdown = orders.reduce((acc, order) => {
+  const statusBreakdown = filteredOrders.reduce((acc, order) => {
     acc[order.status] = (acc[order.status] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
   // Payment status breakdown
-  const paymentBreakdown = orders.reduce((acc, order) => {
+  const paymentBreakdown = filteredOrders.reduce((acc, order) => {
     acc[order.order_payment_status] = (acc[order.order_payment_status] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
   // Top clients by revenue
-  const clientRevenue = orders.reduce((acc, order) => {
+  const clientRevenue = filteredOrders.reduce((acc, order) => {
     const clientId = order.client_id
     const clientName = (order.client as any)?.name || 'Unknown'
     if (!acc[clientId]) {
@@ -107,7 +222,7 @@ function calculateMetrics(orders: any[]) {
     .slice(0, 5) as { name: string; revenue: number; orders: number }[]
 
   // Top services by usage
-  const serviceUsage = orders.reduce((acc, order) => {
+  const serviceUsage = filteredOrders.reduce((acc, order) => {
     order.services?.forEach((serviceOrder: any) => {
       const serviceId = serviceOrder.service_id
       const serviceName = serviceOrder.service?.name || 'Unknown'
@@ -124,13 +239,13 @@ function calculateMetrics(orders: any[]) {
     .sort((a, b) => (b as { usage: number }).usage - (a as { usage: number }).usage)
     .slice(0, 5) as { name: string; usage: number; revenue: number }[]
 
-  // Monthly revenue data for chart
+  // Monthly revenue data for chart (based on filtered data)
   const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
     const month = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const monthStart = new Date(month.getFullYear(), month.getMonth(), 1)
     const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0)
     
-    const monthOrders = orders.filter(order => {
+    const monthOrders = filteredOrders.filter(order => {
       const orderDate = new Date(order.created_at)
       return orderDate >= monthStart && orderDate <= monthEnd
     })
@@ -144,25 +259,42 @@ function calculateMetrics(orders: any[]) {
   }).reverse()
 
   return {
-    currentMonthRevenue,
-    previousMonthRevenue,
+    currentRevenue,
+    comparisonRevenue,
     totalRevenue,
-    currentMonthCount,
-    previousMonthCount,
+    currentCount,
+    comparisonCount,
     totalOrders,
     statusBreakdown,
     paymentBreakdown,
     topClients,
     topServices,
     monthlyRevenue,
-    revenueChange: previousMonthRevenue > 0 ? ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100 : 0,
-    orderChange: previousMonthCount > 0 ? ((currentMonthCount - previousMonthCount) / previousMonthCount) * 100 : 0
+    filteredOrders,
+    revenueChange: comparisonRevenue > 0 ? ((currentRevenue - comparisonRevenue) / comparisonRevenue) * 100 : 0,
+    orderChange: comparisonCount > 0 ? ((currentCount - comparisonCount) / comparisonCount) * 100 : 0
   }
 }
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [metrics, setMetrics] = useState<any>(null)
+  const [rawData, setRawData] = useState<any>(null)
+  const [clients, setClients] = useState<any[]>([])
+  const [showFilters, setShowFilters] = useState(false)
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    dateRange: '30d',
+    status: 'all',
+    paymentStatus: 'all',
+    clientId: 'all',
+    clientType: 'all',
+    minAmount: '',
+    maxAmount: '',
+    startDate: '',
+    endDate: ''
+  })
 
   useEffect(() => {
     const fetchData = async () => {
@@ -175,8 +307,10 @@ export default function AnalyticsPage() {
         }
 
         const { orders, clients: clientsData, services: servicesData } = await getAnalyticsData(user.id)
-        const metricsData = calculateMetrics(orders)
+        setRawData({ orders, clients: clientsData, services: servicesData })
+        setClients(clientsData)
         
+        const metricsData = calculateMetrics(orders, filters)
         setMetrics(metricsData)
       } catch (error) {
         console.error('Error fetching analytics data:', error)
@@ -187,6 +321,44 @@ export default function AnalyticsPage() {
 
     fetchData()
   }, [])
+
+  // Recalculate metrics when filters change
+  useEffect(() => {
+    if (rawData) {
+      const metricsData = calculateMetrics(rawData.orders, filters)
+      setMetrics(metricsData)
+    }
+  }, [filters, rawData])
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  const resetFilters = () => {
+    setFilters({
+      dateRange: '30d',
+      status: 'all',
+      paymentStatus: 'all',
+      clientId: 'all',
+      clientType: 'all',
+      minAmount: '',
+      maxAmount: '',
+      startDate: '',
+      endDate: ''
+    })
+  }
+
+  const getActiveFiltersCount = () => {
+    let count = 0
+    if (filters.status !== 'all') count++
+    if (filters.paymentStatus !== 'all') count++
+    if (filters.clientId !== 'all') count++
+    if (filters.clientType !== 'all') count++
+    if (filters.minAmount) count++
+    if (filters.maxAmount) count++
+    if (filters.startDate || filters.endDate) count++
+    return count
+  }
 
   if (loading || !metrics) {
     return (
@@ -204,41 +376,290 @@ export default function AnalyticsPage() {
 
   const statCards = [
     {
-      title: 'Total Revenue',
-      value: formatCurrency(metrics.totalRevenue),
+      title: 'Filtered Revenue',
+      value: formatCurrency(metrics.currentRevenue),
       change: metrics.revenueChange,
-      changeLabel: 'vs last month',
+      changeLabel: 'vs previous period',
       icon: DollarSign,
-      description: 'All time earnings'
+      description: `Revenue for selected period (${metrics.currentCount} orders)`
     },
     {
-      title: 'Total Orders',
-      value: metrics.totalOrders.toString(),
+      title: 'Filtered Orders',
+      value: metrics.currentCount.toString(),
       change: metrics.orderChange,
-      changeLabel: 'vs last month',
+      changeLabel: 'vs previous period',
       icon: BarChart3,
-      description: 'All orders created'
+      description: `Orders for selected period`
     },
     {
       title: 'Active Clients',
       value: metrics.topClients.length.toString(),
       icon: Users,
-      description: 'Total clients'
+      description: 'Clients with orders in period'
     },
     {
-      title: 'Services',
+      title: 'Services Used',
       value: metrics.topServices.length.toString(),
       icon: Package,
-      description: 'Available services'
+      description: 'Services used in period'
     }
   ]
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
-        <p className="text-muted-foreground">Track your performance and insights</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
+          <p className="text-muted-foreground">Track your performance and insights</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center space-x-2"
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {getActiveFiltersCount() > 0 && (
+              <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1">
+                {getActiveFiltersCount()}
+              </span>
+            )}
+          </Button>
+          {getActiveFiltersCount() > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetFilters}
+              className="flex items-center space-x-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Reset</span>
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Filters Section */}
+      {showFilters && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Filter Analytics Data</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFilters(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Filter your analytics data to focus on specific time periods, statuses, clients, and amounts
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Date Range Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date Range
+                </label>
+                <Select value={filters.dateRange} onValueChange={(value) => handleFilterChange('dateRange', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="7d">Last 7 Days</SelectItem>
+                    <SelectItem value="30d">Last 30 Days</SelectItem>
+                    <SelectItem value="90d">Last 90 Days</SelectItem>
+                    <SelectItem value="6m">Last 6 Months</SelectItem>
+                    <SelectItem value="1y">Last Year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Order Status
+                </label>
+                <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    <SelectItem value="Archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Payment Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Status
+                </label>
+                <Select value={filters.paymentStatus} onValueChange={(value) => handleFilterChange('paymentStatus', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Payment Statuses</SelectItem>
+                    <SelectItem value="Unpaid">Unpaid</SelectItem>
+                    <SelectItem value="Pending Invoice">Pending Invoice</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Client Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client
+                </label>
+                <Select value={filters.clientId} onValueChange={(value) => handleFilterChange('clientId', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Clients</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Client Type Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Type
+                </label>
+                <Select value={filters.clientType} onValueChange={(value) => handleFilterChange('clientType', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="Individual">Individual</SelectItem>
+                    <SelectItem value="Company">Company</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Contractor">Contractor</SelectItem>
+                    <SelectItem value="Residential">Residential</SelectItem>
+                    <SelectItem value="Commercial">Commercial</SelectItem>
+                    <SelectItem value="Government">Government</SelectItem>
+                    <SelectItem value="Non-Profit">Non-Profit</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Min Amount Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Min Amount
+                </label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={filters.minAmount}
+                  onChange={(e) => handleFilterChange('minAmount', e.target.value)}
+                />
+              </div>
+
+              {/* Max Amount Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Max Amount
+                </label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={filters.maxAmount}
+                  onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
+                />
+              </div>
+
+              {/* Custom Date Range */}
+              {filters.dateRange === 'custom' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Active Filters Summary */}
+            {getActiveFiltersCount() > 0 && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Active Filters:</strong> {getActiveFiltersCount()} filter(s) applied
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {filters.status !== 'all' && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      Status: {filters.status}
+                    </span>
+                  )}
+                  {filters.paymentStatus !== 'all' && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      Payment: {filters.paymentStatus}
+                    </span>
+                  )}
+                  {filters.clientId !== 'all' && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      Client: {clients.find(c => c.id === filters.clientId)?.name}
+                    </span>
+                  )}
+                  {filters.clientType !== 'all' && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      Type: {filters.clientType}
+                    </span>
+                  )}
+                  {filters.minAmount && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      Min: ${filters.minAmount}
+                    </span>
+                  )}
+                  {filters.maxAmount && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      Max: ${filters.maxAmount}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -349,7 +770,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {metrics.recentOrders?.slice(0, 5).map((order: any) => (
+              {metrics.filteredOrders?.slice(0, 5).map((order: any) => (
                 <div key={order.id} className="flex justify-between items-center">
                   <div>
                     <p className="text-sm font-medium">{(order.client as any)?.name || 'Unknown Client'}</p>

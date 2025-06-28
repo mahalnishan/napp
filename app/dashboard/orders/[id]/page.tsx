@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Edit, ArrowLeft, Calendar, User, DollarSign, FileText, Clock, MapPin, Phone, Mail } from 'lucide-react'
+import { Edit, ArrowLeft, Calendar, User, DollarSign, FileText, Clock, MapPin, Phone, Mail, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -54,6 +54,9 @@ export default function ViewOrderPage() {
   const [loading, setLoading] = useState(true)
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [error, setError] = useState('')
+  const [syncing, setSyncing] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [syncMessage, setSyncMessage] = useState('')
 
   useEffect(() => {
     fetchOrder()
@@ -114,6 +117,43 @@ export default function ViewOrderPage() {
     }
   }
 
+  const handleSyncWithQuickBooks = async () => {
+    if (!order) return
+    
+    setSyncing(true)
+    setSyncStatus('idle')
+    setSyncMessage('')
+
+    try {
+      const response = await fetch('/api/quickbooks/sync-order-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSyncStatus('success')
+        setSyncMessage(data.message)
+        
+        // Refresh the order data to show updated information
+        await fetchOrder()
+      } else {
+        setSyncStatus('error')
+        setSyncMessage(data.error || 'Failed to sync with QuickBooks')
+      }
+    } catch (error) {
+      setSyncStatus('error')
+      setSyncMessage('Network error occurred while syncing')
+      console.error('Sync error:', error)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -155,13 +195,51 @@ export default function ViewOrderPage() {
             <p className="text-gray-600">View work order information</p>
           </div>
         </div>
-        <Link href={`/dashboard/orders/${order.id}/edit`}>
-          <Button>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Order
+        <div className="flex items-center space-x-2">
+          <Button
+            onClick={handleSyncWithQuickBooks}
+            disabled={syncing}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            {syncing ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Sync with QuickBooks
+              </>
+            )}
           </Button>
-        </Link>
+          <Link href={`/dashboard/orders/${order.id}/edit`}>
+            <Button>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Order
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Sync Status Message */}
+      {syncStatus !== 'idle' && (
+        <div className={`p-4 rounded-lg border ${
+          syncStatus === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {syncStatus === 'success' ? (
+              <CheckCircle className="h-5 w-5" />
+            ) : (
+              <AlertCircle className="h-5 w-5" />
+            )}
+            <span className="font-medium">{syncMessage}</span>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Order Information */}

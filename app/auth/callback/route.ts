@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
     
     if (exchangeError) {
       console.error('Code exchange error:', exchangeError)
@@ -26,10 +26,73 @@ export async function GET(request: Request) {
       return NextResponse.redirect(errorUrl)
     }
 
+    // If authentication was successful and we have user data
+    if (data.user) {
+      try {
+        // Extract user information from Google OAuth
+        const user = data.user
+        const userMetadata = user.user_metadata || {}
+        
+        // Get the user's name from Google OAuth data
+        let userName = null
+        if (userMetadata.full_name) {
+          userName = userMetadata.full_name
+        } else if (userMetadata.name) {
+          userName = userMetadata.name
+        } else if (userMetadata.first_name && userMetadata.last_name) {
+          userName = `${userMetadata.first_name} ${userMetadata.last_name}`
+        }
+
+        // Check if user profile already exists
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (!existingProfile) {
+          // Create new user profile with Google data
+          const { error: profileError } = await supabase
+            .from('users')
+            .insert({
+              id: user.id,
+              email: user.email || '',
+              name: userName,
+              avatar_url: userMetadata.avatar_url || null,
+              phone: null
+            })
+
+          if (profileError) {
+            console.error('Error creating user profile:', profileError)
+          } else {
+            console.log('User profile created successfully with Google data')
+          }
+        } else if (userName && !existingProfile.name) {
+          // Update existing profile with name if it's missing
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ 
+              name: userName,
+              avatar_url: userMetadata.avatar_url || existingProfile.avatar_url
+            })
+            .eq('id', user.id)
+
+          if (updateError) {
+            console.error('Error updating user profile:', updateError)
+          } else {
+            console.log('User profile updated with Google data')
+          }
+        }
+      } catch (profileError) {
+        console.error('Error handling user profile:', profileError)
+        // Don't fail the authentication for profile errors
+      }
+    }
+
     // Successful authentication
     const forwardedHost = request.headers.get('x-forwarded-host')
     const redirectUrl = forwardedHost
-      ? `https://${forwardedHost}${next}`
+      ? `http://${forwardedHost}${next}`
       : `${origin}${next}`
     return NextResponse.redirect(redirectUrl)
   }

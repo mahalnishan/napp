@@ -6,52 +6,80 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Search, Filter, Download, Upload, CheckSquare, Square, Edit, Trash2, MoreHorizontal } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Edit, Trash2, Search, Save, X, Download, Calendar, DollarSign, User, CheckSquare, Square, List, Grid3X3, Clock, MapPin, Phone, Mail, RefreshCw } from 'lucide-react'
+import { WorkOrderWithDetails, Client, Service, Worker } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { BulkEditModal } from '@/components/bulk-edit-modal'
+import Link from 'next/link'
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithDetails[]>([])
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [workers, setWorkers] = useState<Worker[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('created_at')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [clientFilter, setClientFilter] = useState('all')
+  const [paymentFilter, setPaymentFilter] = useState('all')
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
   const [bulkAction, setBulkAction] = useState('')
   const [showBulkActions, setShowBulkActions] = useState(false)
   const [showBulkEditModal, setShowBulkEditModal] = useState(false)
   const [bulkEditLoading, setBulkEditLoading] = useState(false)
+  const [bulkSyncLoading, setBulkSyncLoading] = useState(false)
+  const [syncAllLoading, setSyncAllLoading] = useState(false)
+  const [sortField, setSortField] = useState('created_at')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [viewMode, setViewMode] = useState<'list' | 'schedule'>('list')
+  const [scheduleFilter, setScheduleFilter] = useState<'week' | 'month' | 'year'>('week')
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalOrders, setTotalOrders] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   const fetchOrders = async () => {
     try {
-      setLoading(true)
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data, error } = await supabase
-        .from('work_orders')
-        .select(`
-          *,
-          client:clients(*),
-          worker:workers(*),
-          services:work_order_services(
-            *,
-            service:services(*)
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString()
+      })
 
-      if (error) throw error
-      setOrders(data || [])
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching orders:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch orders')
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+
+      if (clientFilter !== 'all') {
+        params.append('clientId', clientFilter)
+      }
+
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+
+      // Use the API endpoint for pagination and filtering
+      const response = await fetch(`/api/orders?${params.toString()}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setOrders(data.orders || [])
+        setTotalOrders(data.pagination.total || 0)
+        setTotalPages(data.pagination.totalPages || 0)
+      } else {
+        console.error('Error fetching orders:', data.error)
+        setError(data.error || 'Failed to fetch orders')
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+      setError('Failed to fetch orders')
     } finally {
       setLoading(false)
     }
@@ -59,6 +87,45 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders()
+  }, [])
+
+  // Refetch when filters or pagination change
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page when filters change
+    fetchOrders()
+  }, [statusFilter, clientFilter, paymentFilter, searchTerm, pageSize])
+
+  // Refetch when page changes
+  useEffect(() => {
+    fetchOrders()
+  }, [currentPage])
+
+  const fetchClients = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('name')
+
+      if (error) {
+        console.error('Error fetching clients:', error)
+        return
+      }
+
+      setClients(data || [])
+    } catch (error) {
+      console.error('Error fetching clients:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchClients()
   }, [])
 
   // Filter and sort orders
@@ -83,37 +150,37 @@ export default function OrdersPage() {
       return matchesSearch && matchesStatus
     })
     .sort((a, b) => {
-      let aValue = a[sortBy]
-      let bValue = b[sortBy]
+      let aValue: any = a[sortField as keyof WorkOrderWithDetails]
+      let bValue: any = b[sortField as keyof WorkOrderWithDetails]
       
-      if (sortBy === 'client') {
+      if (sortField === 'client') {
         aValue = a.client?.name || ''
         bValue = b.client?.name || ''
       }
       
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' 
+        return sortDirection === 'asc' 
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue)
       }
       
       if (aValue instanceof Date && bValue instanceof Date) {
-        return sortOrder === 'asc' 
+        return sortDirection === 'asc' 
           ? aValue.getTime() - bValue.getTime()
           : bValue.getTime() - aValue.getTime()
       }
       
-      return sortOrder === 'asc' 
+      return sortDirection === 'asc' 
         ? (aValue > bValue ? 1 : -1)
         : (bValue > aValue ? 1 : -1)
     })
 
   const handleSort = (key: string) => {
-    if (sortBy === key) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    if (sortField === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
-      setSortBy(key)
-      setSortOrder('asc')
+      setSortField(key)
+      setSortDirection('asc')
     }
   }
 
@@ -199,6 +266,123 @@ export default function OrdersPage() {
     }
   }
 
+  const handleBulkSyncWithQuickBooks = async () => {
+    if (selectedOrders.size === 0) return
+    
+    setBulkSyncLoading(true)
+    
+    try {
+      const orderIds = Array.from(selectedOrders)
+      let successCount = 0
+      let errorCount = 0
+      const errors: string[] = []
+      
+      // Sync each order individually
+      for (const orderId of orderIds) {
+        try {
+          const response = await fetch('/api/quickbooks/sync-order-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ orderId }),
+          })
+
+          if (response.ok) {
+            successCount++
+          } else {
+            errorCount++
+            const data = await response.json()
+            errors.push(`Order ${orderId}: ${data.error || 'Unknown error'}`)
+          }
+        } catch (error) {
+          errorCount++
+          errors.push(`Order ${orderId}: Network error`)
+        }
+      }
+      
+      // Show results
+      if (errorCount === 0) {
+        alert(`Successfully synced ${successCount} order(s) with QuickBooks!`)
+      } else {
+        alert(`Synced ${successCount} order(s) successfully, ${errorCount} failed.\n\nErrors:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...and more' : ''}`)
+      }
+      
+      // Refresh orders and clear selection
+      await fetchOrders()
+      setSelectedOrders(new Set())
+      setBulkAction('')
+      setShowBulkActions(false)
+    } catch (error) {
+      console.error('Bulk sync error:', error)
+      alert('Failed to perform bulk sync')
+    } finally {
+      setBulkSyncLoading(false)
+    }
+  }
+
+  const handleSyncAllWithQuickBooks = async () => {
+    if (orders.length === 0) {
+      alert('No orders to sync')
+      return
+    }
+    
+    if (!confirm(`Are you sure you want to sync all ${orders.length} orders with QuickBooks? This may take a few minutes.`)) {
+      return
+    }
+    
+    setSyncAllLoading(true)
+    
+    try {
+      const orderIds = orders.map(order => order.id)
+      let successCount = 0
+      let errorCount = 0
+      const errors: string[] = []
+      
+      // Sync each order individually
+      for (const orderId of orderIds) {
+        try {
+          const response = await fetch('/api/quickbooks/sync-order-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ orderId }),
+          })
+
+          if (response.ok) {
+            successCount++
+          } else {
+            errorCount++
+            const data = await response.json()
+            errors.push(`Order ${orderId}: ${data.error || 'Unknown error'}`)
+          }
+        } catch (error) {
+          errorCount++
+          errors.push(`Order ${orderId}: Network error`)
+        }
+        
+        // Add a small delay to avoid overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 200))
+      }
+      
+      // Show results
+      if (errorCount === 0) {
+        alert(`Successfully synced all ${successCount} orders with QuickBooks!`)
+      } else {
+        alert(`Synced ${successCount} orders successfully, ${errorCount} failed.\n\nErrors:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...and more' : ''}`)
+      }
+      
+      // Refresh orders
+      await fetchOrders()
+    } catch (error) {
+      console.error('Sync all error:', error)
+      alert('Failed to sync all orders with QuickBooks')
+    } finally {
+      setSyncAllLoading(false)
+    }
+  }
+
   const handleBulkAction = async () => {
     if (!bulkAction || selectedOrders.size === 0) return
 
@@ -208,6 +392,10 @@ export default function OrdersPage() {
       switch (bulkAction) {
         case 'edit':
           setShowBulkEditModal(true)
+          return
+
+        case 'sync_quickbooks':
+          await handleBulkSyncWithQuickBooks()
           return
 
         case 'delete':
@@ -360,6 +548,143 @@ export default function OrdersPage() {
     }
   }
 
+  // Helper function to get date range for schedule filter
+  const getScheduleDateRange = () => {
+    const now = new Date()
+    const start = new Date()
+    
+    switch (scheduleFilter) {
+      case 'week':
+        // Start of current week (Sunday)
+        start.setDate(now.getDate() - now.getDay())
+        start.setHours(0, 0, 0, 0)
+        break
+      case 'month':
+        // Start of current month
+        start.setDate(1)
+        start.setHours(0, 0, 0, 0)
+        break
+      case 'year':
+        // Start of current year
+        start.setMonth(0, 1)
+        start.setHours(0, 0, 0, 0)
+        break
+    }
+    
+    const end = new Date(now)
+    end.setHours(23, 59, 59, 999)
+    
+    return { start, end }
+  }
+
+  // Filter orders for schedule view
+  const getScheduleOrders = () => {
+    const { start, end } = getScheduleDateRange()
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.schedule_date_time)
+      return orderDate >= start && orderDate <= end
+    }).sort((a, b) => new Date(a.schedule_date_time).getTime() - new Date(b.schedule_date_time).getTime())
+  }
+
+  // Group orders by date for schedule view
+  const getGroupedScheduleOrders = () => {
+    const scheduleOrders = getScheduleOrders()
+    const grouped: Record<string, WorkOrderWithDetails[]> = {}
+    
+    // For week view, create entries for all days of the week
+    if (scheduleFilter === 'week') {
+      const { start } = getScheduleDateRange()
+      const weekStart = new Date(start)
+      
+      // Create entries for all 7 days of the week
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(weekStart)
+        dayDate.setDate(weekStart.getDate() + i)
+        const dateString = dayDate.toDateString()
+        grouped[dateString] = []
+      }
+    }
+    
+    // Add orders to their respective days
+    scheduleOrders.forEach(order => {
+      const date = new Date(order.schedule_date_time).toDateString()
+      if (!grouped[date]) {
+        grouped[date] = []
+      }
+      grouped[date].push(order)
+    })
+    
+    return grouped
+  }
+
+  // Get all unique dates for column headers
+  const getScheduleDates = () => {
+    const groupedOrders = getGroupedScheduleOrders()
+    return Object.keys(groupedOrders).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+  }
+
+  // Get orders for a specific date
+  const getOrdersForDate = (dateString: string) => {
+    const groupedOrders = getGroupedScheduleOrders()
+    return groupedOrders[dateString] || []
+  }
+
+  // Format date for display
+  const formatScheduleDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today'
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow'
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    }
+  }
+
+  // Get day of week for better organization
+  const getDayOfWeek = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { weekday: 'long' })
+  }
+
+  // Check if a date is today
+  const isToday = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
+  // Get status color for schedule cards
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Completed': return 'bg-green-100 text-green-800 border-green-200'
+      case 'In Progress': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200'
+      case 'Archived': return 'bg-gray-100 text-gray-800 border-gray-200'
+      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  // Get payment status color
+  const getPaymentColor = (status: string) => {
+    switch (status) {
+      case 'Paid': return 'bg-green-50 text-green-700'
+      case 'Pending Invoice': return 'bg-yellow-50 text-yellow-700'
+      case 'Unpaid': return 'bg-red-50 text-red-700'
+      default: return 'bg-gray-50 text-gray-700'
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -390,6 +715,24 @@ export default function OrdersPage() {
           <p className="text-sm text-muted-foreground">Manage and track your work orders</p>
         </div>
         <div className="flex space-x-2">
+          <Button 
+            onClick={handleSyncAllWithQuickBooks} 
+            disabled={syncAllLoading || orders.length === 0}
+            variant="outline" 
+            size="sm"
+          >
+            {syncAllLoading ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Syncing All...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync All with QB
+              </>
+            )}
+          </Button>
           <Button onClick={handleExport} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Export {selectedOrders.size > 0 && `(${selectedOrders.size})`}
@@ -403,35 +746,105 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search orders..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-9"
-                />
-              </div>
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-input bg-background rounded-md text-sm h-9"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+      {/* View Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4 mr-2" />
+            List View
+          </Button>
+          <Button
+            variant={viewMode === 'schedule' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('schedule')}
+          >
+            <Grid3X3 className="h-4 w-4 mr-2" />
+            Schedule View
+          </Button>
+        </div>
+        
+        {/* Schedule Filter (only show in schedule view) */}
+        {viewMode === 'schedule' && (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Show:</span>
+            <Select value={scheduleFilter} onValueChange={(value: 'week' | 'month' | 'year') => setScheduleFilter(value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search orders by client name, notes, or order ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48 h-9">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="In Progress">In Progress</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="Cancelled">Cancelled</SelectItem>
+            <SelectItem value="Archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter} onValueChange={setClientFilter}>
+          <SelectTrigger className="w-full sm:w-48 h-9">
+            <SelectValue placeholder="Filter by client" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Clients</SelectItem>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+          <SelectTrigger className="w-full sm:w-48 h-9">
+            <SelectValue placeholder="Filter by payment" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Payment Statuses</SelectItem>
+            <SelectItem value="Unpaid">Unpaid</SelectItem>
+            <SelectItem value="Pending Invoice">Pending Invoice</SelectItem>
+            <SelectItem value="Paid">Paid</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+          <SelectTrigger className="w-full sm:w-24 h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="25">25</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Bulk Actions */}
       {selectedOrders.size > 0 && (
@@ -448,13 +861,7 @@ export default function OrdersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="edit">Edit Selected</SelectItem>
-                    <SelectItem value="status_pending">Set Status: Pending</SelectItem>
-                    <SelectItem value="status_in_progress">Set Status: In Progress</SelectItem>
-                    <SelectItem value="status_completed">Set Status: Completed</SelectItem>
-                    <SelectItem value="status_cancelled">Set Status: Cancelled</SelectItem>
-                    <SelectItem value="payment_unpaid">Set Payment: Unpaid</SelectItem>
-                    <SelectItem value="payment_pending_invoice">Set Payment: Pending Invoice</SelectItem>
-                    <SelectItem value="payment_paid">Set Payment: Paid</SelectItem>
+                    <SelectItem value="sync_quickbooks">Sync with QuickBooks</SelectItem>
                     <SelectItem value="delete">Delete Selected</SelectItem>
                   </SelectContent>
                 </Select>
@@ -480,112 +887,320 @@ export default function OrdersPage() {
           <CardTitle className="text-lg">Orders ({filteredOrders.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/30">
-                  <th className="text-left p-3 text-sm font-medium">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSelectAll}
-                      className="h-6 w-6 p-0"
-                    >
-                      {selectedOrders.size === filteredOrders.length ? (
-                        <CheckSquare className="h-4 w-4" />
-                      ) : (
-                        <Square className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </th>
-                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('client')}>
-                    Client {sortBy === 'client' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
-                    Status {sortBy === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('order_amount')}>
-                    Total {sortBy === 'order_amount' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('created_at')}>
-                    Created {sortBy === 'created_at' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-left p-3 text-sm font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className={`border-b hover:bg-muted/30 ${selectedOrders.has(order.id) ? 'bg-blue-50' : ''}`}>
-                    <td className="p-3">
+          {viewMode === 'list' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="text-left p-3 text-sm font-medium">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleSelectOrder(order.id)}
+                        onClick={handleSelectAll}
                         className="h-6 w-6 p-0"
                       >
-                        {selectedOrders.has(order.id) ? (
+                        {selectedOrders.size === filteredOrders.length ? (
                           <CheckSquare className="h-4 w-4" />
                         ) : (
                           <Square className="h-4 w-4" />
                         )}
                       </Button>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <div className="font-medium text-sm">{order.client?.name || 'Unknown'}</div>
-                        <div className="text-xs text-muted-foreground">{order.client?.email}</div>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span className={`
-                        px-2 py-1 rounded-full text-xs font-medium
-                        ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : ''}
-                        ${order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : ''}
-                        ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                        ${order.status === 'Cancelled' ? 'bg-red-100 text-red-800' : ''}
-                        ${order.status === 'Archived' ? 'bg-gray-100 text-gray-800' : ''}
-                      `}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="font-medium text-sm">
-                        {formatCurrency(order.order_amount || 0)}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="text-xs text-muted-foreground">
-                        {formatDate(order.created_at)}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex space-x-1">
-                        <Link href={`/dashboard/orders/${order.id}`}>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">View</Button>
-                        </Link>
-                        <Link href={`/dashboard/orders/${order.id}/edit`}>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs">Edit</Button>
-                        </Link>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
-                          onClick={() => handleDelete(order.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
+                    </th>
+                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('client')}>
+                      Client {sortField === 'client' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
+                      Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('order_amount')}>
+                      Total {sortField === 'order_amount' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('created_at')}>
+                      Created {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-left p-3 text-sm font-medium">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredOrders.length === 0 && (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground text-sm">No orders found</p>
-              </div>
-            )}
-          </div>
+                </thead>
+                <tbody>
+                  {filteredOrders.map((order) => (
+                    <tr key={order.id} className={`border-b hover:bg-muted/30 ${selectedOrders.has(order.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="p-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSelectOrder(order.id)}
+                          className="h-6 w-6 p-0"
+                        >
+                          {selectedOrders.has(order.id) ? (
+                            <CheckSquare className="h-4 w-4" />
+                          ) : (
+                            <Square className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </td>
+                      <td className="p-3">
+                        <div>
+                          <div className="font-medium text-sm">{order.client?.name || 'Unknown'}</div>
+                          <div className="text-xs text-muted-foreground">{order.client?.email}</div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className={`
+                          px-2 py-1 rounded-full text-xs font-medium
+                          ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : ''}
+                          ${order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : ''}
+                          ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                          ${order.status === 'Cancelled' ? 'bg-red-100 text-red-800' : ''}
+                          ${order.status === 'Archived' ? 'bg-gray-100 text-gray-800' : ''}
+                        `}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="font-medium text-sm">
+                          {formatCurrency(order.order_amount || 0)}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-xs text-muted-foreground">
+                          {formatDate(order.created_at)}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex space-x-1">
+                          <Link href={`/dashboard/orders/${order.id}`}>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">View</Button>
+                          </Link>
+                          <Link href={`/dashboard/orders/${order.id}/edit`}>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">Edit</Button>
+                          </Link>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                            onClick={() => handleDelete(order.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredOrders.length === 0 && (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground text-sm">No orders found</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Schedule View */
+            <div className="p-4">
+              {(() => {
+                const groupedOrders = getGroupedScheduleOrders()
+                const scheduleOrders = getScheduleOrders()
+                const scheduleDates = getScheduleDates()
+                
+                if (scheduleOrders.length === 0 && (scheduleFilter === 'month' || scheduleFilter === 'year')) {
+                  return (
+                    <div className="text-center py-12">
+                      <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">No scheduled orders</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        No orders scheduled for {scheduleFilter === 'month' ? 'this month' : 'this year'}
+                      </p>
+                      <Link href="/dashboard/orders/new">
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create New Order
+                        </Button>
+                      </Link>
+                    </div>
+                  )
+                }
+                
+                return (
+                  <div className="space-y-4">
+                    {/* Schedule Filter Info */}
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-900">
+                          Schedule View - {scheduleFilter === 'week' ? 'This Week' : scheduleFilter === 'month' ? 'This Month' : 'This Year'}
+                        </span>
+                      </div>
+                      <Link href="/dashboard/orders/new">
+                        <Button size="sm" variant="outline">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Order
+                        </Button>
+                      </Link>
+                    </div>
+
+                    {/* Schedule Grid */}
+                    <div className="overflow-x-auto">
+                      <div className="min-w-max">
+                        {/* Header Row with Dates */}
+                        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${scheduleDates.length}, 1fr)` }}>
+                          {/* Date column headers */}
+                          {scheduleDates.map((dateString) => (
+                            <div 
+                              key={dateString} 
+                              className={`h-16 flex flex-col items-center justify-center border rounded-lg text-center ${
+                                isToday(dateString) ? 'bg-blue-100 border-blue-300' : 'bg-gray-50'
+                              }`}
+                            >
+                              <div className={`text-sm font-medium ${
+                                isToday(dateString) ? 'text-blue-900' : 'text-gray-900'
+                              }`}>
+                                {formatScheduleDate(dateString)}
+                              </div>
+                              <div className={`text-xs ${
+                                isToday(dateString) ? 'text-blue-700' : 'text-gray-500'
+                              }`}>
+                                {getDayOfWeek(dateString)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Orders Rows */}
+                        <div className="grid gap-4 mt-4" style={{ gridTemplateColumns: `repeat(${scheduleDates.length}, 1fr)` }}>
+                          {/* Orders for each date */}
+                          {scheduleDates.map((dateString) => {
+                            const orders = getOrdersForDate(dateString)
+                            
+                            return (
+                              <div 
+                                key={dateString} 
+                                className={`min-h-64 border rounded-lg p-3 ${
+                                  isToday(dateString) ? 'bg-blue-50 border-blue-200' : 'bg-white'
+                                }`}
+                              >
+                                {orders.length === 0 ? (
+                                  <div className="h-full flex flex-col items-center justify-center">
+                                    <div className="text-xs text-gray-400 text-center mb-2">
+                                      {isToday(dateString) ? 'Today' : 'No orders'}
+                                    </div>
+                                    <Link href="/dashboard/orders/new">
+                                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Add Order
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {orders.map((order) => (
+                                      <div
+                                        key={order.id}
+                                        className={`p-3 rounded-lg text-sm cursor-pointer transition-all hover:shadow-sm ${
+                                          selectedOrders.has(order.id) 
+                                            ? 'ring-2 ring-blue-500 bg-blue-100' 
+                                            : 'bg-white border border-gray-200 hover:border-gray-300'
+                                        }`}
+                                        onClick={() => handleSelectOrder(order.id)}
+                                      >
+                                        <div className="flex items-start justify-between mb-2">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-gray-900 truncate">
+                                              {order.client?.name || 'Unknown'}
+                                            </div>
+                                            <div className="text-gray-600 text-xs">
+                                              {new Date(order.schedule_date_time).toLocaleTimeString('en-US', {
+                                                hour: 'numeric',
+                                                minute: '2-digit',
+                                                hour12: true
+                                              })}
+                                            </div>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-4 w-4 p-0 ml-1 flex-shrink-0"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              handleSelectOrder(order.id)
+                                            }}
+                                          >
+                                            {selectedOrders.has(order.id) ? (
+                                              <CheckSquare className="h-3 w-3" />
+                                            ) : (
+                                              <Square className="h-3 w-3" />
+                                            )}
+                                          </Button>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="text-sm font-medium text-gray-900">
+                                            {formatCurrency(order.order_amount || 0)}
+                                          </div>
+                                          <div className="flex items-center space-x-1">
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                                              {order.status}
+                                            </span>
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${getPaymentColor(order.order_payment_status)}`}>
+                                              {order.order_payment_status}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Quick actions */}
+                                        <div className="flex space-x-1">
+                                          <Link href={`/dashboard/orders/${order.id}`}>
+                                            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                                              View
+                                            </Button>
+                                          </Link>
+                                          <Link href={`/dashboard/orders/${order.id}/edit`}>
+                                            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                                              <Edit className="h-3 w-3" />
+                                            </Button>
+                                          </Link>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Legend */}
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+                      <div className="text-sm font-medium text-gray-700 mb-2">Legend</div>
+                      <div className="flex flex-wrap gap-4 text-xs">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
+                          <span>Today</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
+                          <span>Completed</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded"></div>
+                          <span>In Progress</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+                          <span>Pending</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+                          <span>Cancelled</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -598,6 +1213,63 @@ export default function OrdersPage() {
         selectedCount={selectedOrders.size}
         loading={bulkEditLoading}
       />
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalOrders)} of {totalOrders} orders
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 } 

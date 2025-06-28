@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Edit, Trash2, Search, Save, X } from 'lucide-react'
 import { Service } from '@/lib/types'
 import { formatCurrency, ensureUserRecord } from '@/lib/utils'
@@ -16,6 +17,13 @@ export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalServices, setTotalServices] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -27,19 +35,44 @@ export default function ServicesPage() {
     fetchServices()
   }, [])
 
+  // Refetch when search or pagination change
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page when search changes
+    fetchServices()
+  }, [searchTerm, pageSize])
+
+  // Refetch when page changes
+  useEffect(() => {
+    fetchServices()
+  }, [currentPage])
+
   const fetchServices = async () => {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data } = await supabase
-        .from('services')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name')
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString()
+      })
 
-      setServices(data || [])
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+
+      // Use the API endpoint for pagination and filtering
+      const response = await fetch(`/api/services?${params.toString()}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setServices(data.services || [])
+        setTotalServices(data.pagination.total || 0)
+        setTotalPages(data.pagination.totalPages || 0)
+      } else {
+        console.error('Error fetching services:', data.error)
+      }
     } catch (error) {
       console.error('Error fetching services:', error)
     } finally {
@@ -132,11 +165,6 @@ export default function ServicesPage() {
     setShowForm(false)
   }
 
-  const filteredServices = services.filter(service =>
-    service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (service.description && service.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
-
   if (loading && services.length === 0) {
     return (
       <div className="space-y-6">
@@ -166,15 +194,28 @@ export default function ServicesPage() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-        <Input
-          placeholder="Search services..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Page Size */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search services by name or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-9"
+          />
+        </div>
+        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+          <SelectTrigger className="w-full sm:w-24 h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="25">25</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Add/Edit Form */}
@@ -262,7 +303,7 @@ export default function ServicesPage() {
 
       {/* Services List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredServices.map((service) => (
+        {services.map((service) => (
           <Card key={service.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -306,7 +347,7 @@ export default function ServicesPage() {
         ))}
       </div>
 
-      {filteredServices.length === 0 && !loading && (
+      {services.length === 0 && !loading && (
         <div className="text-center py-8">
           <div className="text-gray-500">
             {searchTerm ? 'No services found matching your search' : 'No services yet'}
@@ -318,6 +359,63 @@ export default function ServicesPage() {
             </Button>
           )}
         </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalServices)} of {totalServices} services
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

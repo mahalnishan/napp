@@ -9,58 +9,6 @@ import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { DashboardStats, WorkOrderWithDetails } from '@/lib/types'
 
-async function getDashboardStats(userId: string): Promise<DashboardStats> {
-  const supabase = createClient()
-  
-  const [
-    { count: totalOrders },
-    { count: totalClients },
-    { count: totalServices },
-    { data: orders },
-    { count: pendingOrders },
-    { count: completedOrders }
-  ] = await Promise.all([
-    supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-    supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-    supabase.from('services').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-    supabase.from('work_orders').select('order_amount').eq('user_id', userId),
-    supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', userId).in('status', ['Pending', 'In Progress']),
-    supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'Completed')
-  ])
-
-  const totalRevenue = orders?.reduce((sum, order) => sum + (order.order_amount || 0), 0) || 0
-
-  return {
-    totalOrders: totalOrders || 0,
-    totalClients: totalClients || 0,
-    totalServices: totalServices || 0,
-    totalRevenue,
-    pendingOrders: pendingOrders || 0,
-    completedOrders: completedOrders || 0
-  }
-}
-
-async function getRecentOrders(userId: string): Promise<WorkOrderWithDetails[]> {
-  const supabase = createClient()
-  
-  const { data: orders } = await supabase
-    .from('work_orders')
-    .select(`
-      *,
-      client:clients(*),
-      worker:workers(*),
-      services:work_order_services(
-        *,
-        service:services(*)
-      )
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  return orders || []
-}
-
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<DashboardStats>({
@@ -83,13 +31,52 @@ export default function DashboardPage() {
           return
         }
 
-        const [statsData, ordersData] = await Promise.all([
-          getDashboardStats(user.id),
-          getRecentOrders(user.id)
+        // Fetch dashboard stats
+        const [
+          { count: totalOrders },
+          { count: totalClients },
+          { count: totalServices },
+          { data: orders },
+          { count: pendingOrders },
+          { count: completedOrders }
+        ] = await Promise.all([
+          supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('services').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('work_orders').select('order_amount').eq('user_id', user.id),
+          supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', user.id).in('status', ['Pending', 'In Progress']),
+          supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'Completed')
         ])
 
+        const totalRevenue = orders?.reduce((sum, order) => sum + (order.order_amount || 0), 0) || 0
+
+        const statsData: DashboardStats = {
+          totalOrders: totalOrders || 0,
+          totalClients: totalClients || 0,
+          totalServices: totalServices || 0,
+          totalRevenue,
+          pendingOrders: pendingOrders || 0,
+          completedOrders: completedOrders || 0
+        }
+
+        // Fetch recent orders
+        const { data: ordersData } = await supabase
+          .from('work_orders')
+          .select(`
+            *,
+            client:clients(*),
+            worker:workers(*),
+            services:work_order_services(
+              *,
+              service:services(*)
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5)
+
         setStats(statsData)
-        setRecentOrders(ordersData)
+        setRecentOrders(ordersData || [])
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {

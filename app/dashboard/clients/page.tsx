@@ -17,12 +17,20 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [clientTypeFilter, setClientTypeFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [bulkAction, setBulkAction] = useState('')
   const [showBulkEditModal, setShowBulkEditModal] = useState(false)
   const [bulkEditLoading, setBulkEditLoading] = useState(false)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalClients, setTotalClients] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,24 +44,52 @@ export default function ClientsPage() {
     fetchClients()
   }, [])
 
+  // Refetch when filters or pagination change
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page when filters change
+    fetchClients()
+  }, [statusFilter, clientTypeFilter, searchTerm, pageSize])
+
+  // Refetch when page changes
+  useEffect(() => {
+    fetchClients()
+  }, [currentPage])
+
   const fetchClients = async () => {
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name')
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString()
+      })
 
-      if (error) {
-        console.error('Error fetching clients:', error)
-        return
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
       }
 
-      setClients(data || [])
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+
+      if (clientTypeFilter !== 'all') {
+        params.append('clientType', clientTypeFilter)
+      }
+
+      // Use the API endpoint for pagination and filtering
+      const response = await fetch(`/api/clients?${params.toString()}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setClients(data.clients || [])
+        setTotalClients(data.pagination.total || 0)
+        setTotalPages(data.pagination.totalPages || 0)
+      } else {
+        console.error('Error fetching clients:', data.error)
+      }
     } catch (error) {
       console.error('Error fetching clients:', error)
     } finally {
@@ -378,15 +414,9 @@ export default function ClientsPage() {
   }
 
   const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.phone && client.phone.includes(searchTerm))
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && client.is_active) ||
-      (statusFilter === 'inactive' && !client.is_active)
-    
-    return matchesSearch && matchesStatus
+    // Only filter by client type on client side since other filters are handled server-side
+    const matchesClientType = clientTypeFilter === 'all' || client.client_type === clientTypeFilter
+    return matchesClientType
   })
 
   const clientTypeOptions = [
@@ -449,6 +479,34 @@ export default function ClientsPage() {
             <SelectItem value="all">All Clients</SelectItem>
             <SelectItem value="active">Active Only</SelectItem>
             <SelectItem value="inactive">Inactive Only</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
+          <SelectTrigger className="w-full sm:w-48 h-9">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="Individual">Individual</SelectItem>
+            <SelectItem value="Company">Company</SelectItem>
+            <SelectItem value="Cash">Cash</SelectItem>
+            <SelectItem value="Contractor">Contractor</SelectItem>
+            <SelectItem value="Residential">Residential</SelectItem>
+            <SelectItem value="Commercial">Commercial</SelectItem>
+            <SelectItem value="Government">Government</SelectItem>
+            <SelectItem value="Non-Profit">Non-Profit</SelectItem>
+            <SelectItem value="Other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+          <SelectTrigger className="w-full sm:w-24 h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="25">25</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -724,9 +782,9 @@ export default function ClientsPage() {
             {filteredClients.length === 0 && (
               <div className="text-center py-6">
                 <p className="text-muted-foreground text-sm">
-                  {searchTerm || statusFilter !== 'all' ? 'No clients found matching your criteria' : 'No clients yet'}
+                  {searchTerm || statusFilter !== 'all' || clientTypeFilter !== 'all' ? 'No clients found matching your criteria' : 'No clients yet'}
                 </p>
-                {!searchTerm && statusFilter === 'all' && (
+                {!searchTerm && statusFilter === 'all' && clientTypeFilter === 'all' && (
                   <Button onClick={() => setShowForm(true)} className="mt-4" size="sm">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Your First Client
@@ -737,6 +795,63 @@ export default function ClientsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalClients)} of {totalClients} clients
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bulk Edit Modal */}
       <BulkEditModal

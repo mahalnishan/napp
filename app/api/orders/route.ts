@@ -14,9 +14,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '10')
     const status = searchParams.get('status')
     const clientId = searchParams.get('clientId')
+    const search = searchParams.get('search')
 
     let query = supabase
       .from('work_orders')
@@ -38,6 +39,11 @@ export async function GET(request: NextRequest) {
 
     if (clientId) {
       query = query.eq('client_id', clientId)
+    }
+
+    if (search) {
+      // Search in client name, notes, and order ID
+      query = query.or(`clients.name.ilike.%${search}%,notes.ilike.%${search}%,id.ilike.%${search}%`)
     }
 
     // Add pagination
@@ -62,6 +68,11 @@ export async function GET(request: NextRequest) {
 
     if (clientId) {
       countQuery = countQuery.eq('client_id', clientId)
+    }
+
+    if (search) {
+      // Search in client name, notes, and order ID
+      countQuery = countQuery.or(`clients.name.ilike.%${search}%,notes.ilike.%${search}%,id.ilike.%${search}%`)
     }
 
     const { count } = await countQuery

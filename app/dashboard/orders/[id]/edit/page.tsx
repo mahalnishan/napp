@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react'
+import { Plus, Trash2, Save, ArrowLeft, RefreshCw } from 'lucide-react'
 import { Client, Service, Worker } from '@/lib/types'
 import { ensureUserRecord } from '@/lib/utils'
 import Link from 'next/link'
@@ -26,6 +26,7 @@ export default function EditOrderPage() {
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
@@ -238,6 +239,35 @@ export default function EditOrderPage() {
     }
   }
 
+  const handleSyncWithQuickBooks = async () => {
+    setSyncing(true)
+    
+    try {
+      const response = await fetch('/api/quickbooks/sync-order-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert('Order synced with QuickBooks successfully!')
+        // Refresh the data to show updated information
+        await fetchData()
+      } else {
+        alert(`Sync failed: ${data.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      alert('Failed to sync with QuickBooks')
+      console.error('Sync error:', error)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -262,6 +292,26 @@ export default function EditOrderPage() {
             <h1 className="text-3xl font-bold text-gray-900">Edit Order</h1>
             <p className="text-gray-600">Update work order details</p>
           </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            onClick={handleSyncWithQuickBooks}
+            disabled={syncing}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            {syncing ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Sync with QuickBooks
+              </>
+            )}
+          </Button>
         </div>
       </div>
 

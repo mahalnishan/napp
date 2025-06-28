@@ -61,6 +61,7 @@ export function Sidebar() {
     { name: 'Orders', href: '/dashboard/orders', icon: FileText },
     { name: 'Clients', href: '/dashboard/clients', icon: Users },
     { name: 'Services', href: '/dashboard/services', icon: Package },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ]
 
   return (
@@ -159,18 +160,11 @@ export function Sidebar() {
                   collapsed ? 'justify-center px-0' : 'justify-start'
                 }`}
               >
-                <Settings className={`h-5 w-5 ${collapsed ? '' : 'mr-3'}`} />
-                {!collapsed && 'Settings'}
+                <User className={`h-5 w-5 ${collapsed ? '' : 'mr-3'}`} />
+                {!collapsed && 'Account'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings" className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
