@@ -5,9 +5,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Search, Filter, Download, Upload } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Plus, Search, Filter, Download, Upload, CheckSquare, Square, Edit, Trash2, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { BulkEditModal } from '@/components/bulk-edit-modal'
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([])
@@ -17,6 +19,11 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set())
+  const [bulkAction, setBulkAction] = useState('')
+  const [showBulkActions, setShowBulkActions] = useState(false)
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false)
+  const [bulkEditLoading, setBulkEditLoading] = useState(false)
 
   const fetchOrders = async () => {
     try {
@@ -62,7 +69,16 @@ export default function OrdersPage() {
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.status.toLowerCase().includes(searchTerm.toLowerCase())
       
-      const matchesStatus = statusFilter === 'all' || order.status === statusFilter
+      // Map filter values to database values
+      const statusFilterMap: Record<string, string> = {
+        'all': 'all',
+        'pending': 'Pending',
+        'in_progress': 'In Progress',
+        'completed': 'Completed',
+        'cancelled': 'Cancelled'
+      }
+      
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilterMap[statusFilter]
       
       return matchesSearch && matchesStatus
     })
@@ -101,10 +117,193 @@ export default function OrdersPage() {
     }
   }
 
+  const handleSelectAll = () => {
+    if (selectedOrders.size === filteredOrders.length) {
+      setSelectedOrders(new Set())
+    } else {
+      setSelectedOrders(new Set(filteredOrders.map(order => order.id)))
+    }
+  }
+
+  const handleSelectOrder = (orderId: string) => {
+    const newSelected = new Set(selectedOrders)
+    if (newSelected.has(orderId)) {
+      newSelected.delete(orderId)
+    } else {
+      newSelected.add(orderId)
+    }
+    setSelectedOrders(newSelected)
+  }
+
+  const handleBulkEdit = async (updates: any) => {
+    setBulkEditLoading(true)
+    try {
+      const supabase = createClient()
+      
+      // Map form field names to database field names and format values correctly
+      const dbUpdates: any = {}
+      
+      if (updates.status) {
+        // Convert status to proper format
+        const statusMap: Record<string, string> = {
+          'pending': 'Pending',
+          'in_progress': 'In Progress',
+          'completed': 'Completed',
+          'cancelled': 'Cancelled',
+          'archived': 'Archived'
+        }
+        dbUpdates.status = statusMap[updates.status] || updates.status
+      }
+      
+      if (updates.payment_status) {
+        // Convert payment status to proper format
+        const paymentStatusMap: Record<string, string> = {
+          'unpaid': 'Unpaid',
+          'pending_invoice': 'Pending Invoice',
+          'paid': 'Paid'
+        }
+        dbUpdates.order_payment_status = paymentStatusMap[updates.payment_status] || updates.payment_status
+      }
+      
+      if (updates.notes) {
+        dbUpdates.notes = updates.notes
+      }
+      
+      if (Object.keys(dbUpdates).length === 0) {
+        alert('No valid fields to update')
+        return
+      }
+      
+      console.log('Updating orders with:', dbUpdates)
+      
+      const { error } = await supabase
+        .from('work_orders')
+        .update(dbUpdates)
+        .in('id', Array.from(selectedOrders))
+
+      if (error) {
+        console.error('Error updating orders:', error)
+        alert(`Failed to update orders: ${error.message}`)
+        return
+      }
+
+      // Refresh orders and clear selection
+      await fetchOrders()
+      setSelectedOrders(new Set())
+      setBulkAction('')
+    } catch (error) {
+      console.error('Bulk edit error:', error)
+      alert('Failed to update orders')
+    } finally {
+      setBulkEditLoading(false)
+    }
+  }
+
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedOrders.size === 0) return
+
+    try {
+      const supabase = createClient()
+      
+      switch (bulkAction) {
+        case 'edit':
+          setShowBulkEditModal(true)
+          return
+
+        case 'delete':
+          if (!confirm(`Are you sure you want to delete ${selectedOrders.size} order(s)? This action cannot be undone.`)) {
+            return
+          }
+          
+          // Delete work order services first
+          const { error: servicesError } = await supabase
+            .from('work_order_services')
+            .delete()
+            .in('work_order_id', Array.from(selectedOrders))
+
+          if (servicesError) {
+            console.error('Error deleting order services:', servicesError)
+            alert('Failed to delete order services')
+            return
+          }
+
+          // Delete the work orders
+          const { error: orderError } = await supabase
+            .from('work_orders')
+            .delete()
+            .in('id', Array.from(selectedOrders))
+
+          if (orderError) {
+            console.error('Error deleting orders:', orderError)
+            alert('Failed to delete orders')
+            return
+          }
+          break
+
+        case 'status_pending':
+        case 'status_in_progress':
+        case 'status_completed':
+        case 'status_cancelled':
+          const statusMap: Record<string, string> = {
+            'status_pending': 'Pending',
+            'status_in_progress': 'In Progress',
+            'status_completed': 'Completed',
+            'status_cancelled': 'Cancelled'
+          }
+          const newStatus = statusMap[bulkAction]
+          const { error: updateError } = await supabase
+            .from('work_orders')
+            .update({ status: newStatus })
+            .in('id', Array.from(selectedOrders))
+
+          if (updateError) {
+            console.error('Error updating orders:', updateError)
+            alert('Failed to update orders')
+            return
+          }
+          break
+
+        case 'payment_unpaid':
+        case 'payment_pending_invoice':
+        case 'payment_paid':
+          const paymentStatusMap: Record<string, string> = {
+            'payment_unpaid': 'Unpaid',
+            'payment_pending_invoice': 'Pending Invoice',
+            'payment_paid': 'Paid'
+          }
+          const newPaymentStatus = paymentStatusMap[bulkAction]
+          const { error: paymentError } = await supabase
+            .from('work_orders')
+            .update({ order_payment_status: newPaymentStatus })
+            .in('id', Array.from(selectedOrders))
+
+          if (paymentError) {
+            console.error('Error updating payment status:', paymentError)
+            alert('Failed to update payment status')
+            return
+          }
+          break
+      }
+
+      // Refresh orders and clear selection
+      await fetchOrders()
+      setSelectedOrders(new Set())
+      setBulkAction('')
+      setShowBulkActions(false)
+    } catch (error) {
+      console.error('Bulk action error:', error)
+      alert('Failed to perform bulk action')
+    }
+  }
+
   const handleExport = () => {
+    const ordersToExport = selectedOrders.size > 0 
+      ? filteredOrders.filter(order => selectedOrders.has(order.id))
+      : filteredOrders
+
     const csvContent = [
       ['Client', 'Status', 'Total', 'Created Date'],
-      ...filteredOrders.map(order => [
+      ...ordersToExport.map(order => [
         order.client?.name || '',
         order.status,
         order.order_amount || 0,
@@ -193,7 +392,7 @@ export default function OrdersPage() {
         <div className="flex space-x-2">
           <Button onClick={handleExport} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Export {selectedOrders.size > 0 && `(${selectedOrders.size})`}
           </Button>
           <Link href="/dashboard/orders/new">
             <Button size="sm">
@@ -234,6 +433,47 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
 
+      {/* Bulk Actions */}
+      {selectedOrders.size > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium">
+                  {selectedOrders.size} order(s) selected
+                </span>
+                <Select value={bulkAction} onValueChange={setBulkAction}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select action..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="edit">Edit Selected</SelectItem>
+                    <SelectItem value="status_pending">Set Status: Pending</SelectItem>
+                    <SelectItem value="status_in_progress">Set Status: In Progress</SelectItem>
+                    <SelectItem value="status_completed">Set Status: Completed</SelectItem>
+                    <SelectItem value="status_cancelled">Set Status: Cancelled</SelectItem>
+                    <SelectItem value="payment_unpaid">Set Payment: Unpaid</SelectItem>
+                    <SelectItem value="payment_pending_invoice">Set Payment: Pending Invoice</SelectItem>
+                    <SelectItem value="payment_paid">Set Payment: Paid</SelectItem>
+                    <SelectItem value="delete">Delete Selected</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleBulkAction} disabled={!bulkAction}>
+                  Apply
+                </Button>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSelectedOrders(new Set())}
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Orders Table */}
       <Card>
         <CardHeader className="pb-3">
@@ -244,6 +484,20 @@ export default function OrdersPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/30">
+                  <th className="text-left p-3 text-sm font-medium">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSelectAll}
+                      className="h-6 w-6 p-0"
+                    >
+                      {selectedOrders.size === filteredOrders.length ? (
+                        <CheckSquare className="h-4 w-4" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </th>
                   <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('client')}>
                     Client {sortBy === 'client' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
@@ -261,7 +515,21 @@ export default function OrdersPage() {
               </thead>
               <tbody>
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="border-b hover:bg-muted/30">
+                  <tr key={order.id} className={`border-b hover:bg-muted/30 ${selectedOrders.has(order.id) ? 'bg-blue-50' : ''}`}>
+                    <td className="p-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSelectOrder(order.id)}
+                        className="h-6 w-6 p-0"
+                      >
+                        {selectedOrders.has(order.id) ? (
+                          <CheckSquare className="h-4 w-4" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </td>
                     <td className="p-3">
                       <div>
                         <div className="font-medium text-sm">{order.client?.name || 'Unknown'}</div>
@@ -271,12 +539,13 @@ export default function OrdersPage() {
                     <td className="p-3">
                       <span className={`
                         px-2 py-1 rounded-full text-xs font-medium
-                        ${order.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
-                        ${order.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : ''}
-                        ${order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                        ${order.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                        ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : ''}
+                        ${order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : ''}
+                        ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                        ${order.status === 'Cancelled' ? 'bg-red-100 text-red-800' : ''}
+                        ${order.status === 'Archived' ? 'bg-gray-100 text-gray-800' : ''}
                       `}>
-                        {order.status.replace('_', ' ')}
+                        {order.status}
                       </span>
                     </td>
                     <td className="p-3">
@@ -319,6 +588,16 @@ export default function OrdersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Edit Modal */}
+      <BulkEditModal
+        isOpen={showBulkEditModal}
+        onClose={() => setShowBulkEditModal(false)}
+        onSave={handleBulkEdit}
+        type="orders"
+        selectedCount={selectedOrders.size}
+        loading={bulkEditLoading}
+      />
     </div>
   )
 } 

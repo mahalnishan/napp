@@ -137,18 +137,55 @@ export default function SettingsPage() {
 
   const handleTestInvoice = async () => {
     try {
-      // Create a test order first
+      setLoading(true)
+      setError('')
+      setMessage('Creating test invoice...')
+
+      // Get a real client first
       const supabase = createClient()
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) return
+      if (!authUser) {
+        setError('User not authenticated')
+        return
+      }
 
+      // Get the first available client
+      const { data: clients } = await supabase
+        .from('clients')
+        .select('id, name')
+        .eq('user_id', authUser.id)
+        .eq('is_active', true)
+        .limit(1)
+
+      if (!clients || clients.length === 0) {
+        setError('No active clients found. Please create a client first before testing invoice creation.')
+        return
+      }
+
+      const client = clients[0]
+
+      // Get the first available service
+      const { data: services } = await supabase
+        .from('services')
+        .select('id, name, price')
+        .eq('user_id', authUser.id)
+        .limit(1)
+
+      if (!services || services.length === 0) {
+        setError('No services found. Please create a service first before testing invoice creation.')
+        return
+      }
+
+      const service = services[0]
+
+      // Create a test order
       const testOrder = {
         user_id: authUser.id,
-        client_id: 'test-client',
+        client_id: client.id,
         assigned_to_type: 'Self' as const,
         status: 'Pending' as const,
         schedule_date_time: new Date().toISOString(),
-        order_amount: 100,
+        order_amount: service.price,
         order_payment_status: 'Unpaid' as const,
         notes: 'Test order for QuickBooks integration'
       }
@@ -159,7 +196,28 @@ export default function SettingsPage() {
         .select()
         .single()
 
-      if (orderError) throw orderError
+      if (orderError) {
+        console.error('Order creation error:', orderError)
+        setError(`Failed to create test order: ${orderError.message}`)
+        return
+      }
+
+      // Create work order service
+      const { error: serviceError } = await supabase
+        .from('work_order_services')
+        .insert({
+          work_order_id: order.id,
+          service_id: service.id,
+          quantity: 1
+        })
+
+      if (serviceError) {
+        console.error('Service creation error:', serviceError)
+        // Clean up the order
+        await supabase.from('work_orders').delete().eq('id', order.id)
+        setError(`Failed to create test order service: ${serviceError.message}`)
+        return
+      }
 
       // Create test invoice
       const response = await fetch('/api/quickbooks/create-invoice', {
@@ -169,22 +227,180 @@ export default function SettingsPage() {
         },
         body: JSON.stringify({
           orderId: order.id,
-          clientId: 'test-client',
-          services: [{ serviceId: 'test-service', quantity: 1, price: 100 }],
-          totalAmount: 100
+          clientId: client.id,
+          services: [{ serviceId: service.id, quantity: 1, price: service.price }],
+          totalAmount: service.price
         })
       })
 
       if (response.ok) {
         const { invoiceId } = await response.json()
         setMessage(`Test invoice created successfully! Invoice ID: ${invoiceId}`)
+        
+        // Clean up the test order after successful invoice creation
+        setTimeout(async () => {
+          try {
+            await supabase.from('work_order_services').delete().eq('work_order_id', order.id)
+            await supabase.from('work_orders').delete().eq('id', order.id)
+            console.log('Test order cleaned up successfully')
+          } catch (cleanupError) {
+            console.error('Failed to cleanup test order:', cleanupError)
+          }
+        }, 5000) // Clean up after 5 seconds
       } else {
         const errorData = await response.json()
-        setError(`Failed to create test invoice: ${errorData.error}`)
+        console.error('Invoice creation error:', errorData)
+        setError(`Failed to create test invoice: ${errorData.error || 'Unknown error'}`)
+        
+        // Clean up the test order
+        await supabase.from('work_order_services').delete().eq('work_order_id', order.id)
+        await supabase.from('work_orders').delete().eq('id', order.id)
       }
     } catch (error) {
       console.error('Test invoice error:', error)
-      setError('Failed to create test invoice')
+      setError(`Test invoice failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleComprehensiveTest = async () => {
+    if (!confirm('This will create a test customer, invoice, and payment in your QuickBooks Online sandbox account. Continue?')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+      setMessage('Running comprehensive QuickBooks integration test (Sandbox)...')
+
+      const response = await fetch('/api/quickbooks/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Test failed')
+      }
+
+      // Format the results for display
+      const results = data.testResults
+      const summary = data.summary
+      const ids = data.quickbooksIds
+      const diagnostics = data.diagnostics
+
+      let resultMessage = '=== QUICKBOOKS INTEGRATION TEST RESULTS (SANDBOX) ===\\n\\n'
+      
+      resultMessage += `Customer Creation: ${results.customerStatus.toUpperCase()}\\n`
+      resultMessage += `Invoice Creation: ${results.invoiceStatus.toUpperCase()}\\n`
+      resultMessage += `Payment Creation: ${results.paymentStatus.toUpperCase()}\\n\\n`
+      
+      if (ids.customerId) resultMessage += `Customer ID: ${ids.customerId}\\n`
+      if (ids.invoiceId) resultMessage += `Invoice ID: ${ids.invoiceId}\\n`
+      if (ids.paymentId) resultMessage += `Payment ID: ${ids.paymentId}\\n\\n`
+      
+      resultMessage += `All Operations Successful: ${summary.allSuccessful ? 'YES' : 'NO'}\\n\\n`
+      
+      if (results.errors.length > 0) {
+        resultMessage += 'Errors:\\n'
+        results.errors.forEach((error: string, index: number) => {
+          resultMessage += `${index + 1}. ${error}\\n`
+        })
+        resultMessage += '\\n'
+      }
+      
+      resultMessage += 'Next Steps:\\n'
+      resultMessage += '1. Visit https://sandbox.qbo.intuit.com to verify the test data\\n'
+      resultMessage += '2. Check Sales → Customers for the test customer\\n'
+      resultMessage += '3. Check Sales → Invoices for the test invoice\\n'
+      resultMessage += '4. Check Sales → Payments for the test payment\\n'
+      resultMessage += '5. Verify invoice status shows "Paid"\\n\\n'
+      
+      if (diagnostics) {
+        resultMessage += 'Diagnostics:\\n'
+        resultMessage += `Environment: ${diagnostics.appEnvironment}\\n`
+        resultMessage += `Company: ${diagnostics.companyName}\\n`
+        resultMessage += `Realm ID: ${diagnostics.realmId}\\n`
+        resultMessage += `Token Expired: ${diagnostics.tokenExpired ? 'Yes' : 'No'}\\n\\n`
+      }
+
+      setMessage(resultMessage)
+    } catch (error) {
+      console.error('Comprehensive test error:', error)
+      setError(`Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBulkCustomerCreation = async () => {
+    if (!confirm('This will create 10 test customers in your QuickBooks Online sandbox account. Each customer will have a unique timestamp for easy identification. Continue?')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+      setMessage('Creating 10 test customers in QuickBooks sandbox...')
+
+      const response = await fetch('/api/quickbooks/bulk-create-customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Bulk creation failed')
+      }
+
+      // Format the results for display
+      const results = data.results
+      const summary = data.summary
+
+      let resultMessage = '=== BULK CUSTOMER CREATION RESULTS ===\\n\\n'
+      
+      resultMessage += `Total Customers: ${summary.total}\\n`
+      resultMessage += `Successful: ${summary.successful}\\n`
+      resultMessage += `Failed: ${summary.failed}\\n`
+      resultMessage += `Success Rate: ${summary.successRate}%\\n\\n`
+      
+      if (results.customerIds.length > 0) {
+        resultMessage += 'Created Customer IDs:\\n'
+        results.customerIds.forEach((id: string, index: number) => {
+          resultMessage += `${index + 1}. ${id}\\n`
+        })
+        resultMessage += '\\n'
+      }
+      
+      if (results.errors.length > 0) {
+        resultMessage += 'Errors:\\n'
+        results.errors.forEach((error: string, index: number) => {
+          resultMessage += `${index + 1}. ${error}\\n`
+        })
+        resultMessage += '\\n'
+      }
+      
+      resultMessage += 'Next Steps:\\n'
+      resultMessage += '1. Visit https://sandbox.qbo.intuit.com to verify the created customers\\n'
+      resultMessage += '2. Check Sales → Customers to see all test customers\\n'
+      resultMessage += '3. Each customer has a unique timestamp for easy identification\\n'
+      resultMessage += '4. Customers are created with Canadian addresses for testing\\n\\n'
+      
+      resultMessage += `Timestamp: ${results.timestamp}\\n`
+
+      setMessage(resultMessage)
+    } catch (error) {
+      console.error('Bulk customer creation error:', error)
+      setError(`Bulk creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -543,10 +759,18 @@ export default function SettingsPage() {
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   <span className="text-sm font-medium">Connected to QuickBooks</span>
                 </div>
-                <div className="flex space-x-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Button variant="outline" onClick={handleTestInvoice}>
                     <FileText className="mr-2 h-4 w-4" />
                     Create Test Invoice
+                  </Button>
+                  <Button variant="outline" onClick={handleComprehensiveTest} disabled={loading}>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    {loading ? 'Running Test...' : 'Full Integration Test'}
+                  </Button>
+                  <Button variant="outline" onClick={handleBulkCustomerCreation} disabled={loading}>
+                    <Users className="mr-2 h-4 w-4" />
+                    Create 10 Test Customers
                   </Button>
                   <Button variant="outline" onClick={handleQuickBooksDisconnect}>
                     <Unlink className="mr-2 h-4 w-4" />

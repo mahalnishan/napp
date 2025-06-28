@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Search, Save, X, Mail, Phone, MapPin, Building2, User, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, Save, X, Mail, Phone, MapPin, Building2, User, CheckCircle, XCircle, CheckSquare, Square } from 'lucide-react'
 import { Client } from '@/lib/types'
 import { ensureUserRecord } from '@/lib/utils'
+import { BulkEditModal } from '@/components/bulk-edit-modal'
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
@@ -18,6 +19,10 @@ export default function ClientsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [showForm, setShowForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
+  const [bulkAction, setBulkAction] = useState('')
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false)
+  const [bulkEditLoading, setBulkEditLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -53,6 +58,162 @@ export default function ClientsPage() {
       console.error('Error fetching clients:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSelectAll = () => {
+    if (selectedClients.size === filteredClients.length) {
+      setSelectedClients(new Set())
+    } else {
+      setSelectedClients(new Set(filteredClients.map(client => client.id)))
+    }
+  }
+
+  const handleSelectClient = (clientId: string) => {
+    const newSelected = new Set(selectedClients)
+    if (newSelected.has(clientId)) {
+      newSelected.delete(clientId)
+    } else {
+      newSelected.add(clientId)
+    }
+    setSelectedClients(newSelected)
+  }
+
+  const handleBulkEdit = async (updates: any) => {
+    setBulkEditLoading(true)
+    try {
+      const supabase = createClient()
+      
+      // Map form field names to database field names
+      const dbUpdates: any = {}
+      if (updates.client_type) dbUpdates.client_type = updates.client_type
+      if (updates.is_active !== null) dbUpdates.is_active = updates.is_active
+      
+      if (Object.keys(dbUpdates).length === 0) {
+        alert('No valid fields to update')
+        return
+      }
+      
+      const { error } = await supabase
+        .from('clients')
+        .update(dbUpdates)
+        .in('id', Array.from(selectedClients))
+
+      if (error) {
+        console.error('Error updating clients:', error)
+        alert('Failed to update clients')
+        return
+      }
+
+      // Refresh clients and clear selection
+      await fetchClients()
+      setSelectedClients(new Set())
+      setBulkAction('')
+    } catch (error) {
+      console.error('Bulk edit error:', error)
+      alert('Failed to update clients')
+    } finally {
+      setBulkEditLoading(false)
+    }
+  }
+
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedClients.size === 0) return
+
+    try {
+      const supabase = createClient()
+      
+      switch (bulkAction) {
+        case 'edit':
+          setShowBulkEditModal(true)
+          return
+
+        case 'delete':
+          if (!confirm(`Are you sure you want to delete ${selectedClients.size} client(s)? This will also delete all associated orders. This action cannot be undone.`)) {
+            return
+          }
+          
+          // First, delete all work order services for orders belonging to these clients
+          const { data: orders } = await supabase
+            .from('work_orders')
+            .select('id')
+            .in('client_id', Array.from(selectedClients))
+
+          if (orders && orders.length > 0) {
+            const orderIds = orders.map(order => order.id)
+            
+            // Delete work order services for all orders of these clients
+            const { error: servicesError } = await supabase
+              .from('work_order_services')
+              .delete()
+              .in('work_order_id', orderIds)
+
+            if (servicesError) {
+              console.error('Error deleting order services:', servicesError)
+              alert('Failed to delete associated order services')
+              return
+            }
+
+            // Delete all orders for these clients
+            const { error: ordersError } = await supabase
+              .from('work_orders')
+              .delete()
+              .in('client_id', Array.from(selectedClients))
+
+            if (ordersError) {
+              console.error('Error deleting orders:', ordersError)
+              alert('Failed to delete associated orders')
+              return
+            }
+          }
+
+          // Finally, delete the clients
+          const { error } = await supabase
+            .from('clients')
+            .delete()
+            .in('id', Array.from(selectedClients))
+
+          if (error) {
+            console.error('Error deleting clients:', error)
+            alert('Failed to delete clients')
+            return
+          }
+          break
+
+        case 'activate':
+          const { error: activateError } = await supabase
+            .from('clients')
+            .update({ is_active: true })
+            .in('id', Array.from(selectedClients))
+
+          if (activateError) {
+            console.error('Error activating clients:', activateError)
+            alert('Failed to activate clients')
+            return
+          }
+          break
+
+        case 'deactivate':
+          const { error: deactivateError } = await supabase
+            .from('clients')
+            .update({ is_active: false })
+            .in('id', Array.from(selectedClients))
+
+          if (deactivateError) {
+            console.error('Error deactivating clients:', deactivateError)
+            alert('Failed to deactivate clients')
+            return
+          }
+          break
+      }
+
+      // Refresh clients and clear selection
+      await fetchClients()
+      setSelectedClients(new Set())
+      setBulkAction('')
+    } catch (error) {
+      console.error('Bulk action error:', error)
+      alert('Failed to perform bulk action')
     }
   }
 
@@ -292,6 +453,42 @@ export default function ClientsPage() {
         </Select>
       </div>
 
+      {/* Bulk Actions */}
+      {selectedClients.size > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium">
+                  {selectedClients.size} client(s) selected
+                </span>
+                <Select value={bulkAction} onValueChange={setBulkAction}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select action..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="edit">Edit Selected</SelectItem>
+                    <SelectItem value="activate">Activate Selected</SelectItem>
+                    <SelectItem value="deactivate">Deactivate Selected</SelectItem>
+                    <SelectItem value="delete">Delete Selected</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleBulkAction} disabled={!bulkAction}>
+                  Apply
+                </Button>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSelectedClients(new Set())}
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Add/Edit Form */}
       {showForm && (
         <Card>
@@ -412,6 +609,20 @@ export default function ClientsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/30">
+                  <th className="text-left p-3 text-sm font-medium">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSelectAll}
+                      className="h-6 w-6 p-0"
+                    >
+                      {selectedClients.size === filteredClients.length ? (
+                        <CheckSquare className="h-4 w-4" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </th>
                   <th className="text-left p-3 text-sm font-medium">Name</th>
                   <th className="text-left p-3 text-sm font-medium">Email</th>
                   <th className="text-left p-3 text-sm font-medium">Phone</th>
@@ -422,7 +633,21 @@ export default function ClientsPage() {
               </thead>
               <tbody>
                 {filteredClients.map((client) => (
-                  <tr key={client.id} className={`border-b hover:bg-muted/30 ${!client.is_active ? 'opacity-75' : ''}`}>
+                  <tr key={client.id} className={`border-b hover:bg-muted/30 ${!client.is_active ? 'opacity-75' : ''} ${selectedClients.has(client.id) ? 'bg-blue-50' : ''}`}>
+                    <td className="p-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSelectClient(client.id)}
+                        className="h-6 w-6 p-0"
+                      >
+                        {selectedClients.has(client.id) ? (
+                          <CheckSquare className="h-4 w-4" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </td>
                     <td className="p-3">
                       <div className="font-medium text-sm">{client.name}</div>
                       {client.address && (
@@ -512,6 +737,16 @@ export default function ClientsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Edit Modal */}
+      <BulkEditModal
+        isOpen={showBulkEditModal}
+        onClose={() => setShowBulkEditModal(false)}
+        onSave={handleBulkEdit}
+        type="clients"
+        selectedCount={selectedClients.size}
+        loading={bulkEditLoading}
+      />
     </div>
   )
 } 
