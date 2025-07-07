@@ -283,7 +283,6 @@ export const usePerformanceMonitor = (name: string) => {
 
   const end = useCallback(() => {
     const duration = performance.now() - startTime.current
-    console.log(`${name}: ${duration.toFixed(2)}ms`)
     return duration
   }, [name])
 

@@ -214,14 +214,6 @@ class QuickBooksDirectAPI {
 
     const url = `${baseUrl}/v3/company/${tokens.realmId}${endpoint}${endpoint.includes('?') ? '&' : '?'}minorversion=40`
 
-    console.log('Making QuickBooks API call:', {
-      url,
-      method,
-      endpoint,
-      realmId: tokens.realmId,
-      hasAccessToken: !!tokens.accessToken
-    })
-
     const requestOptions: RequestInit = {
       method: method,
       headers: {
@@ -242,25 +234,11 @@ class QuickBooksDirectAPI {
     try {
       const response = await fetch(url, requestOptions)
 
-      console.log('QuickBooks API response:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      })
+      if (!response.ok) {
+        throw new Error(`QuickBooks API error: ${response.status} - ${response.statusText}`)
+      }
 
       const responseText = await response.text()
-
-      console.log('Response body details:', {
-        bodyType: typeof responseText,
-        bodyLength: responseText?.length,
-        bodyExists: !!responseText,
-        bodyIsEmpty: responseText === '',
-        bodyPreview: responseText?.substring(0, 200)
-      })
-
-      if (!response.ok) {
-        throw new Error(`QuickBooks API error: ${response.status} - ${response.statusText} - ${responseText}`)
-      }
 
       if (!responseText || responseText.trim() === '') {
         throw new Error('Empty response body from QuickBooks API')
@@ -268,25 +246,11 @@ class QuickBooksDirectAPI {
 
       try {
         const parsedResponse = JSON.parse(responseText)
-        console.log('Parsed response successfully:', {
-          hasQueryResponse: !!parsedResponse.QueryResponse,
-          hasTime: !!parsedResponse.time,
-          responseKeys: Object.keys(parsedResponse)
-        })
         return parsedResponse
       } catch (parseError) {
-        console.error('JSON parse error:', parseError)
-        console.error('Response body that failed to parse:', responseText)
         throw new Error(`Failed to parse JSON response: ${parseError}`)
       }
     } catch (error) {
-      console.error('API call error details:', {
-        error: error instanceof Error ? error.message : error,
-        url,
-        method,
-        endpoint,
-        realmId: tokens.realmId
-      })
       throw error
     }
   }
@@ -294,8 +258,6 @@ class QuickBooksDirectAPI {
   // Customer operations
   async createCustomer(tokens: QuickBooksTokens, customerData: any): Promise<any> {
     try {
-      console.log('Creating customer via /customer endpoint:', customerData)
-      
       // Build the customer object for QuickBooks
       const customer: any = {
         Name: customerData.name
@@ -322,8 +284,6 @@ class QuickBooksDirectAPI {
         }
       }
 
-      console.log('Customer payload for QuickBooks:', JSON.stringify(customer, null, 2))
-
       // Try the /customer endpoint (though it may not work)
       const baseUrl = 'https://sandbox-quickbooks.api.intuit.com'
       const url = `${baseUrl}/v3/company/${tokens.realmId}/customer?minorversion=40`
@@ -340,15 +300,7 @@ class QuickBooksDirectAPI {
 
       const responseText = await response.text()
       
-      console.log('Customer creation response:', {
-        status: response.status,
-        statusText: response.statusText,
-        success: response.ok,
-        responseLength: responseText?.length
-      })
-
       if (!response.ok) {
-        console.error('Customer creation failed:', responseText)
         throw new Error(`QuickBooks API error: ${response.status} - ${response.statusText} - ${responseText}`)
       }
 
@@ -357,12 +309,9 @@ class QuickBooksDirectAPI {
       }
 
       const data = JSON.parse(responseText)
-      console.log('Customer created successfully:', data)
-      
       return data
 
     } catch (error) {
-      console.error('Error creating customer:', error)
       throw error
     }
   }
@@ -384,8 +333,6 @@ class QuickBooksDirectAPI {
   // Service/Item operations
   async createService(tokens: QuickBooksTokens, serviceData: any): Promise<any> {
     try {
-      console.log('Creating service via /item endpoint:', serviceData)
-      
       // Build the service object for QuickBooks
       const service: any = {
         Name: serviceData.name,
@@ -396,8 +343,6 @@ class QuickBooksDirectAPI {
       if (serviceData.description && serviceData.description.trim() !== '') {
         service.Description = serviceData.description.trim()
       }
-
-      console.log('Service payload for QuickBooks:', JSON.stringify(service, null, 2))
 
       // Use the /item endpoint which should work for service creation
       const baseUrl = 'https://sandbox-quickbooks.api.intuit.com'
@@ -415,15 +360,7 @@ class QuickBooksDirectAPI {
 
       const responseText = await response.text()
       
-      console.log('Service creation response:', {
-        status: response.status,
-        statusText: response.statusText,
-        success: response.ok,
-        responseLength: responseText?.length
-      })
-
       if (!response.ok) {
-        console.error('Service creation failed:', responseText)
         throw new Error(`QuickBooks API error: ${response.status} - ${response.statusText} - ${responseText}`)
       }
 
@@ -432,12 +369,9 @@ class QuickBooksDirectAPI {
       }
 
       const data = JSON.parse(responseText)
-      console.log('Service created successfully:', data)
-      
       return data
 
     } catch (error) {
-      console.error('Error creating service:', error)
       throw error
     }
   }
@@ -486,13 +420,6 @@ const getQuickBooksConfig = (): QuickBooksConfig => {
   const redirectUri = process.env.QUICKBOOKS_REDIRECT_URI || process.env.REDIRECT_URL
   const environment = process.env.QUICKBOOKS_ENVIRONMENT || process.env.ENVIRONMENT
 
-  console.log('QuickBooks Config Check:', {
-    clientId: clientId ? '✓ Set' : '✗ Missing',
-    clientSecret: clientSecret ? '✓ Set' : '✗ Missing',
-    redirectUri: redirectUri ? '✓ Set' : '✗ Missing',
-    environment: environment || '✗ Missing'
-  })
-
   if (!clientId) {
     throw new Error('QUICKBOOKS_CLIENT_ID environment variable is missing. Please add it to your .env.local file.')
   }
@@ -534,7 +461,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().getAuthorizationURL(state)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.getAuthorizationURL:', error)
       throw error
     }
   },
@@ -543,7 +469,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().exchangeCodeForTokens(code, realmId)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.exchangeCodeForTokens:', error)
       throw error
     }
   },
@@ -552,7 +477,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().refreshTokens(refreshToken)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.refreshTokens:', error)
       throw error
     }
   },
@@ -562,7 +486,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().createCustomer(tokens, customerData)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.createCustomer:', error)
       throw error
     }
   },
@@ -571,7 +494,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().findCustomerByEmail(email, tokens)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.findCustomerByEmail:', error)
       throw error
     }
   },
@@ -580,7 +502,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().getCustomers(tokens, maxResults)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.getCustomers:', error)
       throw error
     }
   },
@@ -590,7 +511,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().createService(tokens, serviceData)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.createService:', error)
       throw error
     }
   },
@@ -599,7 +519,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().findServiceByName(name, tokens)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.findServiceByName:', error)
       throw error
     }
   },
@@ -608,7 +527,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().getServices(tokens, maxResults)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.getServices:', error)
       throw error
     }
   },
@@ -618,7 +536,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().createInvoice(invoice, tokens)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.createInvoice:', error)
       throw error
     }
   },
@@ -627,7 +544,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().getInvoices(tokens, maxResults)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.getInvoices:', error)
       throw error
     }
   },
@@ -637,7 +553,6 @@ export const quickbooksDirectAPI = {
     try {
       return getQuickBooksDirectAPI().getCompanyInfo(tokens)
     } catch (error) {
-      console.error('Error in quickbooksDirectAPI.getCompanyInfo:', error)
       throw error
     }
   }

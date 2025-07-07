@@ -57,15 +57,11 @@ export default function ClientsPage() {
 
   const fetchClients = async () => {
     try {
-      console.log('Fetching clients...')
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        console.log('No user found')
         return
       }
-
-      console.log('User authenticated:', user.id)
 
       // Build query parameters
       const params = new URLSearchParams({
@@ -86,24 +82,16 @@ export default function ClientsPage() {
       }
 
       const apiUrl = `/api/clients?${params.toString()}`
-      console.log('Fetching from:', apiUrl)
 
       // Use the API endpoint for pagination and filtering
       const response = await fetch(apiUrl)
       const data = await response.json()
 
-      console.log('API response:', data)
-
       if (response.ok) {
         setClients(data.clients || [])
         setTotalClients(data.pagination.total || 0)
         setTotalPages(data.pagination.totalPages || 0)
-        console.log('Clients set:', data.clients?.length || 0)
-      } else {
-        console.error('Error fetching clients:', data.error)
       }
-    } catch (error) {
-      console.error('Error fetching clients:', error)
     } finally {
       setLoading(false)
     }
@@ -148,7 +136,6 @@ export default function ClientsPage() {
         .in('id', Array.from(selectedClients))
 
       if (error) {
-        console.error('Error updating clients:', error)
         alert('Failed to update clients')
         return
       }
@@ -158,7 +145,6 @@ export default function ClientsPage() {
       setSelectedClients(new Set())
       setBulkAction('')
     } catch (error) {
-      console.error('Bulk edit error:', error)
       alert('Failed to update clients')
     } finally {
       setBulkEditLoading(false)
@@ -197,7 +183,6 @@ export default function ClientsPage() {
               .in('work_order_id', orderIds)
 
             if (servicesError) {
-              console.error('Error deleting order services:', servicesError)
               alert('Failed to delete associated order services')
               return
             }
@@ -209,7 +194,6 @@ export default function ClientsPage() {
               .in('client_id', Array.from(selectedClients))
 
             if (ordersError) {
-              console.error('Error deleting orders:', ordersError)
               alert('Failed to delete associated orders')
               return
             }
@@ -222,7 +206,6 @@ export default function ClientsPage() {
             .in('id', Array.from(selectedClients))
 
           if (error) {
-            console.error('Error deleting clients:', error)
             alert('Failed to delete clients')
             return
           }
@@ -235,7 +218,6 @@ export default function ClientsPage() {
             .in('id', Array.from(selectedClients))
 
           if (activateError) {
-            console.error('Error activating clients:', activateError)
             alert('Failed to activate clients')
             return
           }
@@ -248,7 +230,6 @@ export default function ClientsPage() {
             .in('id', Array.from(selectedClients))
 
           if (deactivateError) {
-            console.error('Error deactivating clients:', deactivateError)
             alert('Failed to deactivate clients')
             return
           }
@@ -260,7 +241,6 @@ export default function ClientsPage() {
       setSelectedClients(new Set())
       setBulkAction('')
     } catch (error) {
-      console.error('Bulk action error:', error)
       alert('Failed to perform bulk action')
     }
   }
@@ -294,7 +274,6 @@ export default function ClientsPage() {
           .eq('id', editingClient.id)
 
         if (error) {
-          console.error('Supabase update error:', error)
           throw new Error(error.message || 'Failed to update client')
         }
       } else {
@@ -303,7 +282,6 @@ export default function ClientsPage() {
           .insert(clientData)
 
         if (error) {
-          console.error('Supabase insert error:', error)
           throw new Error(error.message || 'Failed to create client')
         }
       }
@@ -311,7 +289,6 @@ export default function ClientsPage() {
       resetForm()
       fetchClients()
     } catch (error) {
-      console.error('Error saving client:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to save client'
       alert(`Failed to save client: ${errorMessage}`)
     } finally {
@@ -354,7 +331,6 @@ export default function ClientsPage() {
           .in('work_order_id', orderIds)
 
         if (servicesError) {
-          console.error('Error deleting order services:', servicesError)
           alert('Failed to delete associated order services')
           return
         }
@@ -366,7 +342,6 @@ export default function ClientsPage() {
           .eq('client_id', id)
 
         if (ordersError) {
-          console.error('Error deleting orders:', ordersError)
           alert('Failed to delete associated orders')
           return
         }
@@ -379,13 +354,11 @@ export default function ClientsPage() {
         .eq('id', id)
 
       if (error) {
-        console.error('Supabase delete error:', error)
         throw new Error(error.message || 'Failed to delete client')
       }
       
       fetchClients()
     } catch (error) {
-      console.error('Error deleting client:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete client'
       alert(`Failed to delete client: ${errorMessage}`)
     }
@@ -400,14 +373,12 @@ export default function ClientsPage() {
         .eq('id', client.id)
 
       if (error) {
-        console.error('Error toggling client status:', error)
         alert('Failed to update client status')
         return
       }
 
       fetchClients()
     } catch (error) {
-      console.error('Error toggling client status:', error)
       alert('Failed to update client status')
     }
   }

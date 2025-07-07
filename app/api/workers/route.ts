@@ -18,13 +18,11 @@ export async function GET(request: NextRequest) {
       .order('name')
 
     if (error) {
-      console.error('Error fetching workers:', error)
       return NextResponse.json({ error: 'Failed to fetch workers' }, { status: 500 })
     }
 
     return NextResponse.json({ workers })
   } catch (error) {
-    console.error('Error in workers GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -66,13 +64,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating worker:', error)
       return NextResponse.json({ error: 'Failed to create worker' }, { status: 500 })
     }
 
     return NextResponse.json({ worker })
   } catch (error) {
-    console.error('Error in workers POST:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

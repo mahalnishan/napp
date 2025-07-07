@@ -36,7 +36,6 @@ export async function ensureUserRecord(userId: string, userEmail: string) {
       .single()
 
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found"
-      console.error('Error checking user:', checkError)
       throw checkError
     }
 
@@ -49,13 +48,9 @@ export async function ensureUserRecord(userId: string, userEmail: string) {
           email: userEmail
         })
 
-      if (insertError) {
-        console.error('Error creating user record:', insertError)
-        throw insertError
-      }
+      throw insertError
     }
   } catch (error) {
-    console.error('Error ensuring user record:', error)
     throw error
   }
 } 

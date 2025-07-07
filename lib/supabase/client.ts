@@ -8,5 +8,22 @@ export function createClient() {
     throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'effortless-app',
+      },
+    },
+    db: {
+      schema: 'public',
+    },
+    // Add connection timeout configuration
+    realtime: {
+      timeout: 20000, // 20 seconds
+    },
+  })
 } 

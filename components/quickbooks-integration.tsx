@@ -160,12 +160,6 @@ const QuickBooksIntegration = () => {
       const data = await res.json()
       
       if (data.success) {
-        console.log('QuickBooks Configuration:', {
-          environment: data.environment,
-          realmId: data.realmId,
-          companyName: data.companyName,
-          userId: data.userId
-        })
         setMessage('Configuration check completed. Check browser console for details.')
       } else {
         setMessage(`Configuration check failed: ${data.error}`)

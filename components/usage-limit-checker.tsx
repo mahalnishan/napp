@@ -61,7 +61,6 @@ export function UsageLimitChecker({ action, onAllowed, onDenied, children }: Usa
         onDenied?.()
       }
     } catch (error) {
-      console.error('Error checking usage limit:', error)
       setAllowed(false)
       onDenied?.()
     } finally {

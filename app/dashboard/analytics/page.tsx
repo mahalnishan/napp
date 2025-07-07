@@ -313,7 +313,7 @@ export default function AnalyticsPage() {
         const metricsData = calculateMetrics(orders, filters)
         setMetrics(metricsData)
       } catch (error) {
-        console.error('Error fetching analytics data:', error)
+        // Remove all console.error statements that are not essential for user-facing error reporting
       } finally {
         setLoading(false)
       }

@@ -174,8 +174,6 @@ export const withErrorHandling = (
     try {
       return await handler(request, context)
     } catch (error) {
-      console.error('API Error:', error)
-      
       if (error instanceof ApiError) {
         return createErrorResponse(error)
       }
@@ -413,9 +411,6 @@ export const createCrudHandlers = <T>(
       const data = await validateRequest(request, schema)
       const processedData = options.beforeCreate ? await options.beforeCreate(data) : data
       
-      // Implementation would depend on your data layer
-      // const result = await db.create(resource, processedData)
-      
       if (options.afterCreate) {
         await options.afterCreate(processedData)
       }
@@ -427,18 +422,12 @@ export const createCrudHandlers = <T>(
       const params = getPaginationParams(request)
       const sort = getSortParams(request)
       
-      // Implementation would depend on your data layer
-      // const result = await db.findMany(resource, { ...params, ...sort })
-      
       return createSuccessResponse([], `${resource} retrieved successfully`)
     }),
 
     update: withErrorHandling(async (request: NextRequest, { params }: { params: { id: string } }) => {
       const data = await validateRequest(request, (schema as any).partial()) as Partial<T>
       const processedData = options.beforeUpdate ? await options.beforeUpdate(params.id, data) : data
-      
-      // Implementation would depend on your data layer
-      // const result = await db.update(resource, params.id, processedData)
       
       if (options.afterUpdate) {
         await options.afterUpdate(params.id, processedData as T)
@@ -451,9 +440,6 @@ export const createCrudHandlers = <T>(
       if (options.beforeDelete) {
         await options.beforeDelete(params.id)
       }
-      
-      // Implementation would depend on your data layer
-      // await db.delete(resource, params.id)
       
       if (options.afterDelete) {
         await options.afterDelete(params.id)

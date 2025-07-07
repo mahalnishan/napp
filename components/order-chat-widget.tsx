@@ -51,7 +51,6 @@ export default function OrderChatWidget () {
         setMessages(prev => [...prev, assistantMsg])
       }
     } catch (err) {
-      console.error('Chat error', err)
       const assistantMsg: ChatMessage = { id: Date.now().toString() + '-err', role: 'assistant', content: 'Network error. Please try again.' }
       setMessages(prev => [...prev, assistantMsg])
     } finally {

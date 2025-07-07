@@ -1,8 +1,50 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { updateSession } from './lib/supabase/middleware'
+import { checkDatabaseHealth, logDatabaseError } from './lib/supabase/database-utils'
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  try {
+    // Check database health for critical paths
+    const criticalPaths = ['/dashboard', '/admin', '/api/orders', '/api/clients']
+    const isCriticalPath = criticalPaths.some(path => request.nextUrl.pathname.startsWith(path))
+    
+    if (isCriticalPath) {
+      const dbHealth = await checkDatabaseHealth(true, {
+        timeout: 3000, // 3 second timeout for middleware
+        maxRetries: 1,
+        retryDelay: 500,
+      })
+      
+      if (!dbHealth.connected) {
+        logDatabaseError(new Error(dbHealth.error || 'Database connection failed'), `middleware-${request.nextUrl.pathname}`)
+        
+        // For API routes, return error response
+        if (request.nextUrl.pathname.startsWith('/api/')) {
+          return NextResponse.json(
+            { 
+              error: 'Database connection temporarily unavailable',
+              retryAfter: 30,
+              timestamp: new Date().toISOString()
+            },
+            { status: 503, headers: { 'Retry-After': '30' } }
+          )
+        }
+        
+        // For pages, redirect to maintenance page or show error
+        if (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/admin')) {
+          return NextResponse.redirect(new URL('/maintenance', request.url))
+        }
+      }
+    }
+    
+    return await updateSession(request)
+  } catch (error) {
+    // Log the error but don't break the request flow
+    logDatabaseError(error instanceof Error ? error : new Error('Middleware error'), 'middleware')
+    
+    // Continue with the request even if health check fails
+    return await updateSession(request)
+  }
 }
 
 export const config = {

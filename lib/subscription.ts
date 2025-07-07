@@ -19,7 +19,6 @@ export class SubscriptionService {
       .single()
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching subscription:', error)
       return null
     }
 
@@ -43,7 +42,6 @@ export class SubscriptionService {
       .single()
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching usage:', error)
       return null
     }
 
@@ -79,7 +77,6 @@ export class SubscriptionService {
       .eq('user_id', userId)
 
     if (error) {
-      console.error('Error counting team members:', error)
       return false
     }
 
@@ -100,7 +97,6 @@ export class SubscriptionService {
       .single()
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching user settings:', error)
       return null
     }
 
@@ -124,7 +120,6 @@ export class SubscriptionService {
       })
 
     if (error) {
-      console.error('Error creating free subscription:', error)
       throw error
     }
 
@@ -192,7 +187,6 @@ export class SubscriptionService {
       })
 
     if (error) {
-      console.error('Error upgrading subscription:', error)
       throw error
     }
 
@@ -213,8 +207,6 @@ export class SubscriptionService {
       })
   }
 
-
-
   async incrementWorkOrderCount(userId: string): Promise<void> {
     const supabase = await this.getSupabase()
     const currentMonth = new Date().toISOString().slice(0, 7)
@@ -230,7 +222,6 @@ export class SubscriptionService {
       })
 
     if (error) {
-      console.error('Error incrementing work order count:', error)
       throw error
     }
   }
@@ -250,7 +241,6 @@ export class SubscriptionService {
       })
 
     if (error) {
-      console.error('Error incrementing API call count:', error)
       throw error
     }
   }

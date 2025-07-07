@@ -26,13 +26,11 @@ export async function GET(request: NextRequest) {
       .order('name')
 
     if (error) {
-      console.error('Error fetching locations:', error)
       return NextResponse.json({ error: 'Failed to fetch locations' }, { status: 500 })
     }
 
     return NextResponse.json({ locations })
   } catch (error) {
-    console.error('Error in locations GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -87,13 +85,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating location:', error)
       return NextResponse.json({ error: 'Failed to create location' }, { status: 500 })
     }
 
     return NextResponse.json({ location })
   } catch (error) {
-    console.error('Error in locations POST:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

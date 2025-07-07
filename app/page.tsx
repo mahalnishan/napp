@@ -45,9 +45,7 @@ export default function HomePage() {
           queryParams: { access_type: 'offline', prompt: 'consent' }
         }
       })
-      if (error) console.error('Google sign-up error:', error)
     } catch (error) {
-      console.error('Google sign-up error:', error)
     } finally {
       setGoogleLoading(false)
     }
@@ -477,8 +475,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">

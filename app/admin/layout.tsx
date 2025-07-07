@@ -41,7 +41,6 @@ export default function AdminLayout({
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !user) {
-        console.error('Authentication required for admin access')
         router.push('/auth/login')
         return
       }
@@ -54,13 +53,11 @@ export default function AdminLayout({
         .single()
 
       if (profileError) {
-        console.error('Error fetching user profile:', profileError)
         router.push('/dashboard')
         return
       }
 
       if (userProfile?.role !== 'admin') {
-        console.error('Admin access required. User role:', userProfile?.role)
         router.push('/dashboard')
         return
       }
@@ -68,7 +65,6 @@ export default function AdminLayout({
       setUser(user)
       setIsAdmin(true)
     } catch (error) {
-      console.error('Error checking admin access:', error)
       router.push('/dashboard')
     } finally {
       setLoading(false)

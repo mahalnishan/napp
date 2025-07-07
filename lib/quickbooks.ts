@@ -150,16 +150,8 @@ class QuickBooksAPI {
     this.validateConfig()
 
     try {
-      console.log('Exchanging tokens for callback URL:', callbackUrl)
       const authResponse = await this.oauthClient.createToken(callbackUrl)
       const token = authResponse.token
-      
-      console.log('Token exchange successful:', {
-        hasAccessToken: !!token.access_token,
-        hasRefreshToken: !!token.refresh_token,
-        realmId: token.realmId,
-        expiresIn: token.expires_in
-      })
       
       return {
         accessToken: token.access_token,
@@ -168,7 +160,6 @@ class QuickBooksAPI {
         expiresAt: new Date(Date.now() + token.expires_in * 1000)
       }
     } catch (error) {
-      console.error('Token exchange error:', error)
       throw new Error(`QuickBooks OAuth error: ${error}`)
     }
   }
@@ -191,7 +182,6 @@ class QuickBooksAPI {
         expiresAt: new Date(Date.now() + token.expires_in * 1000)
       }
     } catch (error) {
-      console.error('Token refresh error:', error)
       throw new Error(`QuickBooks token refresh error: ${error}`)
     }
   }
@@ -222,14 +212,6 @@ class QuickBooksAPI {
 
     const url = `${baseUrl}/v3/company/${tokens.realmId}${endpoint}${endpoint.includes('?') ? '&' : '?'}minorversion=40`
 
-    console.log('Making QuickBooks API call:', {
-      url,
-      method,
-      endpoint,
-      realmId: tokens.realmId,
-      hasAccessToken: !!tokens.accessToken
-    })
-
     try {
       const requestOptions: any = {
         url,
@@ -246,14 +228,6 @@ class QuickBooksAPI {
       }
 
       const response = await oauthClient.makeApiCall(requestOptions)
-
-      console.log('QuickBooks API response:', {
-        status: response.status,
-        statusText: response.statusText,
-        bodyType: typeof response.body,
-        bodyLength: response.body?.length,
-        bodyPreview: response.body?.substring(0, 200)
-      })
 
       // Check if response body exists and is valid
       if (response.body === undefined || response.body === null) {
@@ -274,25 +248,11 @@ class QuickBooksAPI {
 
       try {
         const parsedResponse = JSON.parse(response.body)
-        console.log('Parsed response successfully:', {
-          hasQueryResponse: !!parsedResponse.QueryResponse,
-          hasTime: !!parsedResponse.time,
-          responseKeys: Object.keys(parsedResponse)
-        })
         return parsedResponse
       } catch (parseError) {
-        console.error('JSON parse error:', parseError)
-        console.error('Response body that failed to parse:', response.body)
         throw new Error(`Failed to parse JSON response: ${parseError}`)
       }
     } catch (error) {
-      console.error('API call error details:', {
-        error: error instanceof Error ? error.message : error,
-        url,
-        method,
-        endpoint,
-        realmId: tokens.realmId
-      })
       throw new Error(`QuickBooks API error: ${error instanceof Error ? error.message : error}`)
     }
   }
@@ -377,13 +337,6 @@ const getQuickBooksConfig = (): QuickBooksConfig => {
   const redirectUri = process.env.QUICKBOOKS_REDIRECT_URI || process.env.REDIRECT_URL
   const environment = process.env.QUICKBOOKS_ENVIRONMENT || process.env.ENVIRONMENT
 
-  console.log('QuickBooks Config Check:', {
-    clientId: clientId ? '✓ Set' : '✗ Missing',
-    clientSecret: clientSecret ? '✓ Set' : '✗ Missing',
-    redirectUri: redirectUri ? '✓ Set' : '✗ Missing',
-    environment: environment || '✗ Missing'
-  })
-
   if (!clientId) {
     throw new Error('QUICKBOOKS_CLIENT_ID environment variable is missing. Please add it to your .env.local file.')
   }
@@ -425,7 +378,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().getAuthorizationURL(state)
     } catch (error) {
-      console.error('Error in quickbooksAPI.getAuthorizationURL:', error)
       throw error
     }
   },
@@ -434,7 +386,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().exchangeCodeForTokens(callbackUrl)
     } catch (error) {
-      console.error('Error in quickbooksAPI.exchangeCodeForTokens:', error)
       throw error
     }
   },
@@ -443,7 +394,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().refreshTokens(refreshToken)
     } catch (error) {
-      console.error('Error in quickbooksAPI.refreshTokens:', error)
       throw error
     }
   },
@@ -453,7 +403,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().createCustomer(customer, tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.createCustomer:', error)
       throw error
     }
   },
@@ -462,7 +411,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().findCustomerByEmail(email, tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.findCustomerByEmail:', error)
       throw error
     }
   },
@@ -471,7 +419,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().getCustomers(tokens, maxResults)
     } catch (error) {
-      console.error('Error in quickbooksAPI.getCustomers:', error)
       throw error
     }
   },
@@ -481,7 +428,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().createService(service, tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.createService:', error)
       throw error
     }
   },
@@ -490,7 +436,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().findServiceByName(name, tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.findServiceByName:', error)
       throw error
     }
   },
@@ -499,7 +444,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().getServices(tokens, maxResults)
     } catch (error) {
-      console.error('Error in quickbooksAPI.getServices:', error)
       throw error
     }
   },
@@ -509,7 +453,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().createInvoice(invoice, tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.createInvoice:', error)
       throw error
     }
   },
@@ -518,7 +461,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().getInvoice(invoiceId, tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.getInvoice:', error)
       throw error
     }
   },
@@ -527,7 +469,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().getInvoices(tokens, maxResults)
     } catch (error) {
-      console.error('Error in quickbooksAPI.getInvoices:', error)
       throw error
     }
   },
@@ -536,7 +477,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().updateInvoice(invoiceId, invoice, tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.updateInvoice:', error)
       throw error
     }
   },
@@ -546,7 +486,6 @@ export const quickbooksAPI = {
     try {
       return getQuickBooksAPI().getCompanyInfo(tokens)
     } catch (error) {
-      console.error('Error in quickbooksAPI.getCompanyInfo:', error)
       throw error
     }
   }

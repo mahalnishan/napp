@@ -91,7 +91,6 @@ export async function GET(request: NextRequest) {
       userSettings
     })
   } catch (error) {
-    console.error('Error fetching subscription data:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -142,7 +141,6 @@ export async function POST(request: NextRequest) {
       userSettings
     })
   } catch (error) {
-    console.error('Error updating subscription:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

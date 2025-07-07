@@ -11,7 +11,6 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase environment variables not found in middleware')
     return supabaseResponse
   }
 
@@ -93,8 +92,6 @@ export async function updateSession(request: NextRequest) {
 
     return supabaseResponse
   } catch (error) {
-    console.error('Middleware error:', error)
-    // Return the response without authentication checks if there's an error
     return supabaseResponse
   }
 } 

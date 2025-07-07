@@ -16,10 +16,8 @@ export async function ensureUserSubscription(userId: string) {
     // If no active subscription exists, create a free one
     if (!existingSubscription) {
       await subscriptionService.createFreeSubscription(userId)
-      console.log(`Created free subscription for user ${userId}`)
     }
   } catch (error) {
-    console.error('Error ensuring user subscription:', error)
     // Don't throw error to avoid blocking user registration
   }
 }
@@ -42,7 +40,6 @@ export async function checkAndEnforceLimits(userId: string, action: 'create_work
         break
     }
   } catch (error) {
-    console.error(`Error checking limits for ${action}:`, error)
     throw error
   }
 } 

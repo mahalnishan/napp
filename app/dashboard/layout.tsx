@@ -39,7 +39,6 @@ export default function DashboardLayout({
           setUser(user)
         }
       } catch (error) {
-        console.error('Error checking user:', error)
         router.push('/auth/login')
       } finally {
         setLoading(false)

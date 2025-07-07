@@ -28,5 +28,21 @@ export async function createClient() {
         }
       },
     },
+    auth: {
+      persistSession: false, // Server-side doesn't persist sessions
+      autoRefreshToken: true,
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'effortless-app-server',
+      },
+    },
+    db: {
+      schema: 'public',
+    },
+    // Add connection timeout configuration
+    realtime: {
+      timeout: 20000, // 20 seconds
+    },
   })
 } 

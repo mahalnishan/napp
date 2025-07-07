@@ -98,7 +98,6 @@ export default function SettingsPage() {
         setUsageSummary(summary)
         setUserSettings(settings)
       } catch (subscriptionError) {
-        console.error('Error fetching subscription data:', subscriptionError)
         // Set default values if subscription data fails to load
         setUsageSummary({
           plan: 'free',
@@ -246,7 +245,6 @@ export default function SettingsPage() {
           .upload(filePath, avatarFile)
 
         if (uploadError) {
-          console.error('Upload error:', uploadError)
           if (uploadError.message.includes('Bucket not found')) {
             throw new Error('Avatar storage not configured. Please create an "avatars" bucket in your Supabase Storage.')
           } else if (uploadError.message.includes('new row violates row-level security policy')) {

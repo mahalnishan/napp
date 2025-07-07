@@ -26,13 +26,11 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching API keys:', error)
       return NextResponse.json({ error: 'Failed to fetch API keys' }, { status: 500 })
     }
 
     return NextResponse.json({ apiKeys })
   } catch (error) {
-    console.error('Error in api-keys GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -77,7 +75,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating API key:', error)
       return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 })
     }
 
@@ -89,7 +86,6 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error in api-keys POST:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

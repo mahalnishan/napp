@@ -12,7 +12,8 @@
     "clean": "rm -rf .next out dist",
     "optimize": "npm run clean && npm run build",
     "assign-free-tier": "node scripts/assign-free-tier.js",
-    "setup-env": "node scripts/setup-env.js"
+    "setup-env": "node scripts/setup-env.js",
+    "test-db": "node scripts/test-database.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

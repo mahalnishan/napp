@@ -22,7 +22,6 @@ export function PaymentHandler({ currentPlan, onSuccess, onError }: PaymentHandl
       const { url } = await subscriptionClientService.createCheckoutSession(planType)
       window.location.href = url
     } catch (error) {
-      console.error('Error creating checkout session:', error)
       onError?.(error instanceof Error ? error.message : 'Failed to create checkout session')
     } finally {
       setLoading(null)
@@ -35,7 +34,6 @@ export function PaymentHandler({ currentPlan, onSuccess, onError }: PaymentHandl
       const { url } = await subscriptionClientService.createBillingPortalSession()
       window.location.href = url
     } catch (error) {
-      console.error('Error creating billing portal session:', error)
       onError?.(error instanceof Error ? error.message : 'Failed to open billing portal')
     } finally {
       setLoading(null)

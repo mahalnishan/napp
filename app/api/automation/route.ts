@@ -25,13 +25,11 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching automation rules:', error)
       return NextResponse.json({ error: 'Failed to fetch automation rules' }, { status: 500 })
     }
 
     return NextResponse.json({ automationRules })
   } catch (error) {
-    console.error('Error in automation GET:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -72,13 +70,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating automation rule:', error)
       return NextResponse.json({ error: 'Failed to create automation rule' }, { status: 500 })
     }
 
     return NextResponse.json({ automationRule })
   } catch (error) {
-    console.error('Error in automation POST:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

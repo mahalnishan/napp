@@ -69,11 +69,7 @@ export default function ServicesPage() {
         setServices(data.services || [])
         setTotalServices(data.pagination.total || 0)
         setTotalPages(data.pagination.totalPages || 0)
-      } else {
-        console.error('Error fetching services:', data.error)
       }
-    } catch (error) {
-      console.error('Error fetching services:', error)
     } finally {
       setLoading(false)
     }
@@ -116,7 +112,6 @@ export default function ServicesPage() {
       resetForm()
       fetchServices()
     } catch (error) {
-      console.error('Error saving service:', error)
       alert('Failed to save service')
     } finally {
       setLoading(false)
@@ -146,7 +141,6 @@ export default function ServicesPage() {
       if (error) throw error
       fetchServices()
     } catch (error) {
-      console.error('Error deleting service:', error)
       alert('Failed to delete service')
     }
   }

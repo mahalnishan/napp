@@ -1,9 +1,5 @@
 const apiKey = process.env.GOOGLE_GEMINI_API_KEY
 
-if (!apiKey) {
-  console.warn('GOOGLE_GEMINI_API_KEY env var is missing. Gemini calls will fail.')
-}
-
 interface GeminiResponse {
   candidates?: { content?: { parts?: { text?: string }[] } }[]
   error?: { message?: string }

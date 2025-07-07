@@ -72,11 +72,9 @@ export default function OrdersPage() {
         setTotalOrders(data.pagination.total || 0)
         setTotalPages(data.pagination.totalPages || 0)
       } else {
-        console.error('Error fetching orders:', data.error)
         setError(data.error || 'Failed to fetch orders')
       }
     } catch (error) {
-      console.error('Error fetching orders:', error)
       setError('Failed to fetch orders')
     } finally {
       setLoading(false)
@@ -112,13 +110,11 @@ export default function OrdersPage() {
         .order('name')
 
       if (error) {
-        console.error('Error fetching clients:', error)
         return
       }
 
       setClients(data || [])
     } catch (error) {
-      console.error('Error fetching clients:', error)
     }
   }
 
