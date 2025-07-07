@@ -284,7 +284,7 @@ export class SubscriptionService {
       workOrders: usage?.work_orders_count || 0,
       teamMembers: teamMembers || 0,
       apiCalls: usage?.api_calls_count || 0,
-      storageMB: usage?.storage_mb_used || 0
+      storageMB: usage?.storage_used_mb || 0
     }
 
     const remaining = {

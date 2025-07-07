@@ -4,7 +4,7 @@ import { createStripeCustomer, createCheckoutSession, STRIPE_PLANS } from '@/lib
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
 
     // Get or create Stripe customer
     let stripeCustomerId: string
+    let userName: string | undefined = undefined
+    // Always fetch from users table
+    const { data: profile } = await supabase
+      .from('users')
+      .select('name')
+      .eq('id', user.id)
+      .single()
+    userName = typeof profile?.name === 'string' && profile.name.trim() !== '' ? profile.name : undefined
 
     // Check if user already has a Stripe customer ID
     const { data: existingSubscription } = await supabase
@@ -38,7 +46,7 @@ export async function POST(request: NextRequest) {
       stripeCustomerId = existingSubscription.stripe_customer_id
     } else {
       // Create new Stripe customer
-      const customer = await createStripeCustomer(user.email!, user.name || undefined)
+      const customer = await createStripeCustomer(user.email!, userName)
       stripeCustomerId = customer.id
 
       // Update subscription with Stripe customer ID

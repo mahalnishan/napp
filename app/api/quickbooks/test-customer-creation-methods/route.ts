@@ -162,11 +162,14 @@ export async function GET(request: NextRequest) {
       failed: results.filter(r => !r.success).length,
       successfulTests: results.filter(r => r.success).map(r => r.testCase),
       failedTests: results.filter(r => !r.success).map(r => r.testCase),
-      statusCodes: results.map(r => ({ test: r.testCase, status: r.status })),
+      statusCodes: results.map(r => ({ test: r.testCase, status: 'status' in r ? r.status : null })),
       analysis: {
         customerCreationSupported: results.some(r => r.success && r.method === 'POST'),
         endpointExists: results.some(r => r.success && r.method === 'GET'),
-        supportedMethods: results.find(r => r.method === 'OPTIONS')?.headers?.allow || 'Unknown'
+        supportedMethods: (() => {
+          const opt = results.find(r => r.method === 'OPTIONS');
+          return (opt && 'headers' in opt && opt.headers?.allow) ? opt.headers.allow : 'Unknown';
+        })(),
       }
     }
 

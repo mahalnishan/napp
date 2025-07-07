@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
       failed: results.filter(r => !r.success).length,
       successfulTests: results.filter(r => r.success).map(r => r.testCase),
       failedTests: results.filter(r => !r.success).map(r => r.testCase),
-      statusCodes: results.map(r => ({ test: r.testCase, status: r.status }))
+      statusCodes: results.map(r => ({ test: r.testCase, status: 'status' in r ? r.status : null }))
     }
 
     return NextResponse.json({

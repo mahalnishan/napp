@@ -320,8 +320,8 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
   }
 }
 
-export default function InfoPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
+export default async function InfoPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const page = pages[slug]
   if (!page) return notFound()
 

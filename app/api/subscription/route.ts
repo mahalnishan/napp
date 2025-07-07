@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { subscriptionService } from '@/lib/subscription'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .single()
 
-    const plan = subscription?.plan_type || 'free'
+    const plan = (subscription?.plan_type || 'free') as 'free' | 'professional' | 'enterprise'
     
     // Get usage tracking
     const { data: usage } = await supabase
@@ -97,7 +98,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {

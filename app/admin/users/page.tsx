@@ -235,8 +235,8 @@ export default function AdminUsersPage() {
       console.error('Error keys:', Object.keys(error || {}))
       console.error('Error values:', Object.values(error || {}))
       console.error('Error stringified:', JSON.stringify(error, null, 2))
-      console.error('Error message:', error?.message)
-      console.error('Error stack:', error?.stack)
+      console.error('Error message:', error instanceof Error ? error.message : String(error))
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
       
       // Set empty array to prevent further errors
       setUsers([])

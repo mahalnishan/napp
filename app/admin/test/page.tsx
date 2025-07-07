@@ -32,7 +32,7 @@ export default function TestPage() {
         supabase = createClient()
         addResult('Client Creation', { success: true })
       } catch (error) {
-        addResult('Client Creation', { success: false, error: error?.message })
+        addResult('Client Creation', { success: false, error: error instanceof Error ? error.message : String(error) })
         return
       }
 
@@ -47,7 +47,7 @@ export default function TestPage() {
           error: error?.message
         })
       } catch (error) {
-        addResult('Authentication', { success: false, error: error?.message })
+        addResult('Authentication', { success: false, error: error instanceof Error ? error.message : String(error) })
       }
 
       // Test 4: Basic query
@@ -65,7 +65,7 @@ export default function TestPage() {
           errorCode: error?.code
         })
       } catch (error) {
-        addResult('Basic Query', { success: false, error: error?.message })
+        addResult('Basic Query', { success: false, error: error instanceof Error ? error.message : String(error) })
       }
 
       // Test 5: Count query
@@ -81,7 +81,7 @@ export default function TestPage() {
           errorCode: error?.code
         })
       } catch (error) {
-        addResult('Count Query', { success: false, error: error?.message })
+        addResult('Count Query', { success: false, error: error instanceof Error ? error.message : String(error) })
       }
 
       // Test 6: Full users query
@@ -100,11 +100,11 @@ export default function TestPage() {
           errorCode: error?.code
         })
       } catch (error) {
-        addResult('Full Users Query', { success: false, error: error?.message })
+        addResult('Full Users Query', { success: false, error: error instanceof Error ? error.message : String(error) })
       }
 
     } catch (error) {
-      addResult('General Error', { error: error?.message })
+      addResult('General Error', { error: error instanceof Error ? error.message : String(error) })
     } finally {
       setLoading(false)
     }

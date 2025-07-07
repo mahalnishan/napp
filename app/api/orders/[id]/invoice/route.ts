@@ -4,9 +4,9 @@ import { getQuickBooksAPI } from '@/lib/quickbooks'
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const orderId = params.id
+  const { id: orderId } = await params
   try {
     const supabase = await createClient()
     const {

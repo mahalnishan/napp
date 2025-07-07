@@ -179,7 +179,10 @@ export async function GET(request: NextRequest) {
         getInvoiceWorks: results.find(r => r.testCase.includes('GET /invoice') && r.success),
         postInvoiceWorks: results.find(r => r.testCase.includes('POST /invoice') && r.success)
       },
-      supportedMethods: results.find(r => r.method === 'OPTIONS')?.headers?.allow || 'Unknown'
+      supportedMethods: (() => {
+        const opt = results.find(r => r.method === 'OPTIONS');
+        return (opt && 'headers' in opt && opt.headers?.allow) ? opt.headers.allow : 'Unknown';
+      })()
     }
 
     return NextResponse.json({

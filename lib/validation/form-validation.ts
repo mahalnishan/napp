@@ -64,7 +64,23 @@ export const ValidationRules = {
 }
 
 // Common form schemas
-export const CommonSchemas = {
+const addressSchema = z.object({
+  street: ValidationRules.required('Street address is required'),
+  city: ValidationRules.required('City is required'),
+  state: ValidationRules.required('State is required'),
+  zipCode: ValidationRules.zipCode(),
+  country: ValidationRules.required('Country is required'),
+})
+
+export const CommonSchemas: {
+  contact: z.ZodObject<any>
+  address: z.ZodObject<any>
+  workOrder: z.ZodObject<any>
+  client: z.ZodObject<any>
+  invoice: z.ZodObject<any>
+  user: z.ZodObject<any>
+  settings: z.ZodObject<any>
+} = {
   contact: z.object({
     firstName: ValidationRules.required('First name is required'),
     lastName: ValidationRules.required('Last name is required'),
@@ -73,13 +89,7 @@ export const CommonSchemas = {
     company: z.string().optional(),
   }),
   
-  address: z.object({
-    street: ValidationRules.required('Street address is required'),
-    city: ValidationRules.required('City is required'),
-    state: ValidationRules.required('State is required'),
-    zipCode: ValidationRules.zipCode(),
-    country: ValidationRules.required('Country is required'),
-  }),
+  address: addressSchema,
   
   workOrder: z.object({
     title: ValidationRules.required('Work order title is required'),
@@ -97,7 +107,7 @@ export const CommonSchemas = {
     email: ValidationRules.email(),
     phone: ValidationRules.phone().optional(),
     company: z.string().optional(),
-    address: CommonSchemas.address.optional(),
+    address: addressSchema.optional(),
     notes: z.string().optional(),
   }),
   
@@ -127,7 +137,7 @@ export const CommonSchemas = {
     companyName: ValidationRules.required('Company name is required'),
     email: ValidationRules.email(),
     phone: ValidationRules.phone().optional(),
-    address: CommonSchemas.address.optional(),
+    address: addressSchema.optional(),
     currency: z.enum(['USD', 'EUR', 'GBP', 'CAD'], {
       errorMap: () => ({ message: 'Please select a currency' })
     }),
@@ -189,7 +199,7 @@ export const useFormValidation = <T>(
   const validateField = useCallback((field: string, value: unknown) => {
     try {
       // Create a partial schema for single field validation
-      const fieldSchema = schema.pick({ [field]: true } as any)
+      const fieldSchema = (schema as any).pick({ [field]: true })
       fieldSchema.parse({ [field]: value })
       
       setErrors(prev => {
@@ -229,7 +239,7 @@ export const useFormValidation = <T>(
     }
   }, [touched, validateField])
 
-  const setTouched = useCallback((field: string) => {
+  const setFieldTouched = useCallback((field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }))
   }, [])
 
@@ -243,19 +253,19 @@ export const useFormValidation = <T>(
     value: data[field as keyof T] || '',
     onChange: (value: unknown) => setValue(field, value),
     onBlur: () => {
-      setTouched(field)
+      setFieldTouched(field)
       validateField(field, data[field as keyof T])
     },
     error: touched[field] ? errors[field] : undefined,
     touched: touched[field] || false,
-  }), [data, errors, touched, setValue, validateField])
+  }), [data, errors, touched, setValue, validateField, setFieldTouched])
 
   return {
     data,
     errors,
     touched,
     setValue,
-    setTouched,
+    setTouched: setFieldTouched,
     validateField,
     validateAll,
     reset,

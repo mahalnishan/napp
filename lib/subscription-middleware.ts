@@ -3,7 +3,7 @@ import { subscriptionService } from '@/lib/subscription'
 
 export async function ensureUserSubscription(userId: string) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Check if user already has a subscription
     const { data: existingSubscription } = await supabase

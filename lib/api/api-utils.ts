@@ -434,7 +434,7 @@ export const createCrudHandlers = <T>(
     }),
 
     update: withErrorHandling(async (request: NextRequest, { params }: { params: { id: string } }) => {
-      const data = await validateRequest(request, schema.partial())
+      const data = await validateRequest(request, (schema as any).partial()) as Partial<T>
       const processedData = options.beforeUpdate ? await options.beforeUpdate(params.id, data) : data
       
       // Implementation would depend on your data layer

@@ -58,7 +58,7 @@ export class SubscriptionClientService {
     if (!user) return false
 
     const usageSummary = await this.getCurrentUsage()
-    const plan = usageSummary?.plan || 'free'
+    const plan = (usageSummary?.plan || 'free') as PlanType
     const limits = PLAN_LIMITS[plan]
     
     if (limits.workOrdersPerMonth === -1) {
@@ -74,7 +74,7 @@ export class SubscriptionClientService {
     if (!user) return false
 
     const usageSummary = await this.getCurrentUsage()
-    const plan = usageSummary?.plan || 'free'
+    const plan = (usageSummary?.plan || 'free') as PlanType
     const limits = PLAN_LIMITS[plan]
     
     if (limits.teamMembers === -1) {
@@ -91,7 +91,7 @@ export class SubscriptionClientService {
 
   async hasFeature(feature: keyof typeof PLAN_LIMITS.free.features): Promise<boolean> {
     const usageSummary = await this.getCurrentUsage()
-    const plan = usageSummary?.plan || 'free'
+    const plan = (usageSummary?.plan || 'free') as PlanType
     return PLAN_LIMITS[plan].features[feature]
   }
 

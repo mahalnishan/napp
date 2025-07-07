@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   try {
     switch (event.type) {
@@ -81,8 +81,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription, supa
       .update({
         plan_type: planType,
         status: subscription.status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : null,
+        current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : null,
         stripe_subscription_id: subscription.id,
         updated_at: new Date().toISOString()
       })
@@ -113,8 +113,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supa
     .update({
       plan_type: planType,
       status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : null,
+      current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
       updated_at: new Date().toISOString()
     })
@@ -162,7 +162,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, supa
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, supabase: any) {
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     // Update subscription status to active
     await supabase
       .from('subscriptions')
@@ -170,12 +170,12 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, supabase: 
         status: 'active',
         updated_at: new Date().toISOString()
       })
-      .eq('stripe_subscription_id', invoice.subscription as string)
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
   }
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, supabase: any) {
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     // Update subscription status to past_due
     await supabase
       .from('subscriptions')
@@ -183,7 +183,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, supabase: any
         status: 'past_due',
         updated_at: new Date().toISOString()
       })
-      .eq('stripe_subscription_id', invoice.subscription as string)
+      .eq('stripe_subscription_id', (invoice as any).subscription as string)
   }
 }
 
