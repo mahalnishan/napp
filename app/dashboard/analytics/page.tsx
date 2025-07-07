@@ -58,7 +58,7 @@ async function getAnalyticsData(userId: string) {
   return { orders: orders || [], clients: clients || [], services: services || [] }
 }
 
-function calculateMetrics(orders: any[], filters: any) {
+const calculateMetrics = (orders: any[], filters: any) => {
   const now = new Date()
   
   // Apply date filters

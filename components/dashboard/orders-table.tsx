@@ -18,101 +18,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [paymentFilter, setPaymentFilter] = useState('all')
-  const [quickbooksConnected, setQuickbooksConnected] = useState(false)
-  const [creatingInvoices, setCreatingInvoices] = useState<Set<string>>(new Set())
-  const [invoiceMessages, setInvoiceMessages] = useState<Record<string, { type: 'success' | 'error', text: string }>>({})
-
-  useEffect(() => {
-    checkQuickBooksConnection()
-  }, [])
-
-  const checkQuickBooksConnection = async () => {
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: integration } = await supabase
-        .from('quickbooks_integrations')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      setQuickbooksConnected(!!integration)
-    } catch (error) {
-      console.error('Error checking QuickBooks connection:', error)
-    }
-  }
-
-  const handleCreateInvoice = async (order: WorkOrderWithDetails) => {
-    if (creatingInvoices.has(order.id)) return
-
-    setCreatingInvoices(prev => new Set(prev).add(order.id))
-    setInvoiceMessages(prev => ({ ...prev, [order.id]: { type: 'success', text: '' } }))
-
-    try {
-      const invoiceResponse = await fetch('/api/quickbooks/create-invoice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId: order.id,
-          clientId: order.client_id,
-          services: order.services.map(s => ({
-            serviceId: s.service_id,
-            quantity: s.quantity,
-            price: s.service.price
-          })),
-          totalAmount: order.order_amount
-        })
-      })
-
-      if (invoiceResponse.ok) {
-        const { invoiceId } = await invoiceResponse.json()
-        setInvoiceMessages(prev => ({
-          ...prev,
-          [order.id]: { 
-            type: 'success', 
-            text: `Invoice created! QB ID: ${invoiceId}` 
-          }
-        }))
-        
-        // Clear message after 5 seconds
-        setTimeout(() => {
-          setInvoiceMessages(prev => {
-            const newMessages = { ...prev }
-            delete newMessages[order.id]
-            return newMessages
-          })
-        }, 5000)
-      } else {
-        const error = await invoiceResponse.json()
-        setInvoiceMessages(prev => ({
-          ...prev,
-          [order.id]: { 
-            type: 'error', 
-            text: `Failed: ${error.error}` 
-          }
-        }))
-      }
-    } catch (error) {
-      console.error('Error creating invoice:', error)
-      setInvoiceMessages(prev => ({
-        ...prev,
-        [order.id]: { 
-          type: 'error', 
-          text: 'Failed to create invoice' 
-        }
-      }))
-    } finally {
-      setCreatingInvoices(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(order.id)
-        return newSet
-      })
-    }
-  }
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -244,11 +149,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentColor(order.order_payment_status)}`}>
                       {order.order_payment_status}
                     </span>
-                    {order.quickbooks_invoice_id && (
-                      <div className="text-xs text-blue-600">
-                        QB: {order.quickbooks_invoice_id}
-                      </div>
-                    )}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -263,44 +163,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                         <Edit className="h-4 w-4" />
                       </Button>
                     </Link>
-                    {quickbooksConnected && !order.quickbooks_invoice_id && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleCreateInvoice(order)}
-                        disabled={creatingInvoices.has(order.id)}
-                        className="text-green-600 hover:text-green-700"
-                      >
-                        {creatingInvoices.has(order.id) ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600" />
-                        ) : (
-                          <FileText className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                    {order.quickbooks_invoice_id && (
-                      <div className="flex items-center text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                      </div>
-                    )}
                   </div>
-                  {/* Invoice Message */}
-                  {invoiceMessages[order.id] && (
-                    <div className={`mt-2 text-xs p-2 rounded ${
-                      invoiceMessages[order.id].type === 'success' 
-                        ? 'bg-green-50 text-green-700 border border-green-200' 
-                        : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                      <div className="flex items-center space-x-1">
-                        {invoiceMessages[order.id].type === 'success' ? (
-                          <CheckCircle className="h-3 w-3" />
-                        ) : (
-                          <AlertCircle className="h-3 w-3" />
-                        )}
-                        <span>{invoiceMessages[order.id].text}</span>
-                      </div>
-                    </div>
-                  )}
                 </td>
               </tr>
             ))}

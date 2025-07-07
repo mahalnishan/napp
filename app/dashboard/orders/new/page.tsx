@@ -33,8 +33,6 @@ export default function NewOrderPage() {
   const [paymentStatus, setPaymentStatus] = useState<'Unpaid' | 'Pending Invoice' | 'Paid'>('Unpaid')
   const [notes, setNotes] = useState('')
   const [orderServices, setOrderServices] = useState<OrderService[]>([])
-  const [createQuickBooksInvoice, setCreateQuickBooksInvoice] = useState(false)
-  const [quickbooksConnected, setQuickbooksConnected] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -45,17 +43,15 @@ export default function NewOrderPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const [clientsData, servicesData, workersData, integrationData] = await Promise.all([
+    const [clientsData, servicesData, workersData] = await Promise.all([
       supabase.from('clients').select('*').eq('user_id', user.id).eq('is_active', true),
       supabase.from('services').select('*').eq('user_id', user.id),
-      supabase.from('workers').select('*').eq('user_id', user.id),
-      supabase.from('quickbooks_integrations').select('*').eq('user_id', user.id).single()
+      supabase.from('workers').select('*').eq('user_id', user.id)
     ])
 
     setClients(clientsData.data || [])
     setServices(servicesData.data || [])
     setWorkers(workersData.data || [])
-    setQuickbooksConnected(!!integrationData.data)
   }
 
   const addService = () => {
@@ -289,33 +285,6 @@ export default function NewOrderPage() {
         throw new Error(`Failed to create order services: ${servicesError.message}`)
       }
 
-      // Create QuickBooks invoice if requested and connected
-      if (createQuickBooksInvoice && quickbooksConnected) {
-        try {
-          const invoiceResponse = await fetch('/api/quickbooks/create-invoice', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              orderId: order.id,
-              clientId: selectedClient,
-              services: orderServices,
-              totalAmount
-            })
-          })
-
-          if (invoiceResponse.ok) {
-            const { invoiceId } = await invoiceResponse.json()
-            console.log('QuickBooks invoice created:', invoiceId)
-          } else {
-            console.error('Failed to create QuickBooks invoice')
-          }
-        } catch (error) {
-          console.error('QuickBooks invoice creation error:', error)
-        }
-      }
-
       router.push('/dashboard/orders')
     } catch (error) {
       console.error('Error creating order:', error)
@@ -529,30 +498,6 @@ export default function NewOrderPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* QuickBooks Integration */}
-        {quickbooksConnected && (
-          <Card>
-            <CardHeader>
-              <CardTitle>QuickBooks Integration</CardTitle>
-              <CardDescription>Create invoice in QuickBooks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="createInvoice"
-                  checked={createQuickBooksInvoice}
-                  onChange={(e) => setCreateQuickBooksInvoice(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                <label htmlFor="createInvoice" className="text-sm text-gray-700">
-                  Create invoice in QuickBooks automatically
-                </label>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Notes */}
         <Card>

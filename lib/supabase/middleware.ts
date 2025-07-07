@@ -51,13 +51,44 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    // If user is authenticated, check if they have a profile
+    if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile) {
+        // User exists in auth but not in users table - redirect to registration
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth/register'
+        return NextResponse.redirect(url)
+      }
+    }
+
     if (
       user &&
       request.nextUrl.pathname.startsWith('/auth')
     ) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      // Check if user has a profile before redirecting
+      const { data: profile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (profile) {
+        // User has a profile, redirect to dashboard
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      } else if (request.nextUrl.pathname === '/auth/login') {
+        // User exists in auth but not in users table, redirect to registration
+        const url = request.nextUrl.clone()
+        url.pathname = '/auth/register'
+        return NextResponse.redirect(url)
+      }
     }
 
     return supabaseResponse

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { subscriptionService } from '@/lib/subscription'
 
 export const runtime = 'edge'
 
@@ -124,6 +125,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user can create work order (usage limits)
+    const canCreateWorkOrder = await subscriptionService.canCreateWorkOrder(user.id)
+    if (!canCreateWorkOrder) {
+      return NextResponse.json(
+        { error: 'Work order limit reached. Please upgrade your plan to create more work orders.' },
+        { status: 403 }
+      )
+    }
+
     // Create work order
     const { data: order, error: orderError } = await supabase
       .from('work_orders')
@@ -161,6 +171,9 @@ export async function POST(request: NextRequest) {
       await supabase.from('work_orders').delete().eq('id', order.id)
       return NextResponse.json({ error: servicesError.message }, { status: 500 })
     }
+
+    // Increment usage tracking
+    await subscriptionService.incrementWorkOrderCount(user.id)
 
     return NextResponse.json({ order }, { status: 201 })
   } catch (error) {

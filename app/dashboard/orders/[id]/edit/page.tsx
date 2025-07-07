@@ -38,8 +38,16 @@ export default function EditOrderPage() {
   const [paymentStatus, setPaymentStatus] = useState<'Unpaid' | 'Pending Invoice' | 'Paid'>('Unpaid')
   const [notes, setNotes] = useState('')
   const [orderServices, setOrderServices] = useState<OrderService[]>([])
-  const [createQuickBooksInvoice, setCreateQuickBooksInvoice] = useState(false)
-  const [quickbooksConnected, setQuickbooksConnected] = useState(false)
+  const [formData, setFormData] = useState({
+    client_id: '',
+    assigned_to_type: 'Self' as 'Self' | 'Worker',
+    assigned_to_id: '',
+    status: 'Pending' as 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' | 'Archived',
+    schedule_date_time: '',
+    order_amount: 0,
+    order_payment_status: 'Unpaid' as 'Unpaid' | 'Pending Invoice' | 'Paid',
+    notes: ''
+  })
 
   useEffect(() => {
     fetchData()
@@ -72,17 +80,15 @@ export default function EditOrderPage() {
       }
 
       // Fetch related data
-      const [clientsData, servicesResult, workersData, integrationData] = await Promise.all([
+      const [clientsData, servicesResult, workersData] = await Promise.all([
         supabase.from('clients').select('*').eq('user_id', user.id).eq('is_active', true),
         supabase.from('services').select('*').eq('user_id', user.id),
         supabase.from('workers').select('*').eq('user_id', user.id),
-        supabase.from('quickbooks_integrations').select('*').eq('user_id', user.id).single()
       ])
 
       setClients(clientsData.data || [])
       setServices(servicesResult.data || [])
       setWorkers(workersData.data || [])
-      setQuickbooksConnected(!!integrationData.data)
 
       // Populate form with order data
       setSelectedClient(order.client_id)
@@ -203,68 +209,12 @@ export default function EditOrderPage() {
 
       if (servicesError) throw servicesError
 
-      // Create QuickBooks invoice if requested and connected
-      if (createQuickBooksInvoice && quickbooksConnected) {
-        try {
-          const invoiceResponse = await fetch('/api/quickbooks/create-invoice', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              orderId: orderId,
-              clientId: selectedClient,
-              services: orderServices,
-              totalAmount
-            })
-          })
-
-          if (invoiceResponse.ok) {
-            const { invoiceId } = await invoiceResponse.json()
-            console.log('QuickBooks invoice created:', invoiceId)
-          } else {
-            console.error('Failed to create QuickBooks invoice')
-          }
-        } catch (error) {
-          console.error('QuickBooks invoice creation error:', error)
-        }
-      }
-
       router.push('/dashboard/orders')
     } catch (error) {
       console.error('Error updating order:', error)
       alert('Failed to update order')
     } finally {
       setSaving(false)
-    }
-  }
-
-  const handleSyncWithQuickBooks = async () => {
-    setSyncing(true)
-    
-    try {
-      const response = await fetch('/api/quickbooks/sync-order-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orderId }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        alert('Order synced with QuickBooks successfully!')
-        // Refresh the data to show updated information
-        await fetchData()
-      } else {
-        alert(`Sync failed: ${data.error || 'Unknown error'}`)
-      }
-    } catch (error) {
-      alert('Failed to sync with QuickBooks')
-      console.error('Sync error:', error)
-    } finally {
-      setSyncing(false)
     }
   }
 
@@ -292,26 +242,6 @@ export default function EditOrderPage() {
             <h1 className="text-3xl font-bold text-gray-900">Edit Order</h1>
             <p className="text-gray-600">Update work order details</p>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={handleSyncWithQuickBooks}
-            disabled={syncing}
-            variant="outline"
-            className="flex items-center space-x-2"
-          >
-            {syncing ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Sync with QuickBooks
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -511,30 +441,6 @@ export default function EditOrderPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* QuickBooks Integration */}
-        {quickbooksConnected && (
-          <Card>
-            <CardHeader>
-              <CardTitle>QuickBooks Integration</CardTitle>
-              <CardDescription>Create invoice in QuickBooks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="createInvoice"
-                  checked={createQuickBooksInvoice}
-                  onChange={(e) => setCreateQuickBooksInvoice(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                <label htmlFor="createInvoice" className="text-sm text-gray-700">
-                  Create invoice in QuickBooks automatically
-                </label>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Notes */}
         <Card>

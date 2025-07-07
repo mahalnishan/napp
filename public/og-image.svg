@@ -22,7 +22,7 @@
     <path d="M20 30 L40 50 L60 20" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
     
     <!-- Text -->
-    <text x="100" y="35" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white">nApp</text>
+    <text x="100" y="35" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white">Effortless</text>
     <text x="100" y="70" font-family="Arial, sans-serif" font-size="24" fill="white" opacity="0.9">Work Order Management</text>
   </g>
   

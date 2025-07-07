@@ -15,12 +15,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     phone TEXT,
     avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    -- QuickBooks integration fields
-    quickbooks_access_token TEXT,
-    quickbooks_refresh_token TEXT,
-    quickbooks_realm_id TEXT,
-    quickbooks_connected_at TIMESTAMP WITH TIME ZONE
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create workers table
@@ -113,6 +108,7 @@ CREATE TABLE IF NOT EXISTS public.quickbooks_integrations (
     access_token TEXT NOT NULL,
     refresh_token TEXT NOT NULL,
     realm_id TEXT NOT NULL,
+    state TEXT,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

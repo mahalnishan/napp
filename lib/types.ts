@@ -27,7 +27,6 @@ export interface Client {
   address: string | null
   client_type: string
   is_active: boolean
-  quickbooks_customer_id: string | null
   created_at: string
   updated_at: string
 }
@@ -38,7 +37,6 @@ export interface Service {
   name: string
   description: string | null
   price: number
-  quickbooks_service_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -53,7 +51,7 @@ export interface WorkOrder {
   schedule_date_time: string
   order_amount: number
   order_payment_status: 'Unpaid' | 'Pending Invoice' | 'Paid'
-  quickbooks_invoice_id?: string
+  quickbooks_invoice_id?: string | null
   notes?: string | null
   created_at: string
   updated_at: string
@@ -65,17 +63,6 @@ export interface WorkOrderService {
   service_id: string
   quantity: number
   created_at: string
-}
-
-export interface QuickBooksIntegration {
-  id: string
-  user_id: string
-  access_token: string
-  refresh_token: string
-  realm_id: string
-  expires_at: string
-  created_at: string
-  updated_at: string
 }
 
 export interface DashboardStats {

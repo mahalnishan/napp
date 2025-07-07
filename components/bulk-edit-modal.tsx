@@ -81,7 +81,12 @@ export function BulkEditModal({
                 Update {selectedCount} selected {type === 'orders' ? 'order(s)' : 'client(s)'}
               </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleClose}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleClose}
+              aria-label="Close bulk edit modal"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>

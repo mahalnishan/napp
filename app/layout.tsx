@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { Toaster } from "@/components/ui/toaster";
+import OrderChatWidget from '@/components/order-chat-widget';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,23 +17,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "nApp - Streamline Your Work Orders Like Never Before | Free Beta Access",
-  description: "The complete work order management system for contractors and service businesses. Manage clients, schedule jobs, track payments, and integrate with QuickBooks seamlessly. Get free beta access now!",
+  title: "Effortless - Streamline Your Work Orders Like Never Before | Free Beta Access",
+  description: "Streamline your work orders, manage clients, track payments, and grow your business seamlessly. Get free beta access now!",
   keywords: [
     "work order management",
     "contractor software",
-    "service business management",
-    "QuickBooks integration",
+    "service business",
+    "job tracking",
     "client management",
-    "job scheduling",
     "invoice management",
-    "contractor tools",
-    "service business software",
-    "work order tracking"
+    "field service",
+    "business management"
   ],
-  authors: [{ name: "nApp Team" }],
-  creator: "nApp",
-  publisher: "nApp",
+  authors: [{ name: "Effortless Team" }],
+  creator: "Effortless",
+  publisher: "Effortless",
   formatDetection: {
     email: false,
     address: false,
@@ -44,24 +45,24 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: '/',
-    title: 'nApp - Streamline Your Work Orders Like Never Before',
+    title: 'Effortless - Streamline Your Work Orders Like Never Before',
     description: 'The complete work order management system for contractors and service businesses. Get free beta access now!',
-    siteName: 'nApp',
+    siteName: 'Effortless',
     images: [
       {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
-        alt: 'nApp - Work Order Management System',
+        alt: 'Effortless - Work Order Management System',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'nApp - Streamline Your Work Orders Like Never Before',
+    title: 'Effortless - Streamline Your Work Orders Like Never Before',
     description: 'The complete work order management system for contractors and service businesses. Get free beta access now!',
     images: ['/og-image.svg'],
-    creator: '@napp',
+    creator: '@effortless',
   },
   robots: {
     index: true,
@@ -117,7 +118,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "nApp",
+              "name": "Effortless",
               "description": "The complete work order management system for contractors and service businesses",
               "url": process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
               "applicationCategory": "BusinessApplication",
@@ -138,16 +139,20 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-gradient-radial min-h-screen`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+            <OrderChatWidget />
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

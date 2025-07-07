@@ -43,29 +43,39 @@ export async function GET(request: Request) {
           userName = `${userMetadata.first_name} ${userMetadata.last_name}`
         }
 
-        // Check if user profile already exists
-        const { data: existingProfile } = await supabase
+        // Wait a moment for the trigger to create the user profile
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        // Check if user profile exists (should be created by trigger)
+        const { data: existingProfile, error: profileError } = await supabase
           .from('users')
           .select('*')
           .eq('id', user.id)
           .single()
 
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error checking user profile:', profileError)
+        }
+
+        // If profile doesn't exist, the trigger might have failed
         if (!existingProfile) {
-          // Create new user profile with Google data
-          const { error: profileError } = await supabase
+          console.log('User profile not found, attempting manual creation')
+          
+          // Try to create the profile manually as fallback
+          const { error: insertError } = await supabase
             .from('users')
             .insert({
               id: user.id,
               email: user.email || '',
               name: userName,
               avatar_url: userMetadata.avatar_url || null,
-              phone: null
+              role: 'user'
             })
 
-          if (profileError) {
-            console.error('Error creating user profile:', profileError)
-          } else {
-            console.log('User profile created successfully with Google data')
+          if (insertError) {
+            console.error('Error creating user profile:', insertError)
+            const errorUrl = `${origin}/auth/login?error=${encodeURIComponent('Failed to create account. Please try again.')}`
+            return NextResponse.redirect(errorUrl)
           }
         } else if (userName && !existingProfile.name) {
           // Update existing profile with name if it's missing

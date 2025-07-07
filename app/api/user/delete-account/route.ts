@@ -1,18 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Create Supabase client with service role key for admin operations
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
-    if (!user) {
+    // Get the user from the request headers (passed from client)
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Verify the user token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    console.log(`Starting account deletion for user: ${user.email} (${user.id})`)
+
     // Delete all user data in the correct order to avoid foreign key constraints
     
-    // 1. Delete work order services for all user's orders
+    // 1. Delete API keys
+    const { error: apiKeysError } = await supabase
+      .from('api_keys')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (apiKeysError) {
+      console.error('Error deleting API keys:', apiKeysError)
+    }
+
+    // 2. Delete webhooks
+    const { error: webhooksError } = await supabase
+      .from('webhooks')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (webhooksError) {
+      console.error('Error deleting webhooks:', webhooksError)
+    }
+
+    // 3. Delete automation rules
+    const { error: automationError } = await supabase
+      .from('automation_rules')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (automationError) {
+      console.error('Error deleting automation rules:', automationError)
+    }
+
+    // 4. Delete locations
+    const { error: locationsError } = await supabase
+      .from('locations')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (locationsError) {
+      console.error('Error deleting locations:', locationsError)
+    }
+
+    // 5. Delete usage tracking
+    const { error: usageError } = await supabase
+      .from('usage_tracking')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (usageError) {
+      console.error('Error deleting usage tracking:', usageError)
+    }
+
+    // 6. Delete user settings
+    const { error: settingsError } = await supabase
+      .from('user_settings')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (settingsError) {
+      console.error('Error deleting user settings:', settingsError)
+    }
+
+    // 7. Delete subscriptions
+    const { error: subscriptionsError } = await supabase
+      .from('subscriptions')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (subscriptionsError) {
+      console.error('Error deleting subscriptions:', subscriptionsError)
+    }
+
+    // 8. Delete work order services for all user's orders
     const { data: orders } = await supabase
       .from('work_orders')
       .select('id')
@@ -22,29 +108,28 @@ export async function POST(request: NextRequest) {
       const orderIds = orders.map(order => order.id)
       
       // Delete work order services
-      const { error: servicesError } = await supabase
+      const { error: workOrderServicesError } = await supabase
         .from('work_order_services')
         .delete()
         .in('work_order_id', orderIds)
 
-      if (servicesError) {
-        console.error('Error deleting work order services:', servicesError)
-        return NextResponse.json({ error: 'Failed to delete work order services' }, { status: 500 })
+      if (workOrderServicesError) {
+        console.error('Error deleting work order services:', workOrderServicesError)
       }
     }
 
-    // 2. Delete all work orders
-    const { error: ordersError } = await supabase
+    // 9. Delete all work orders
+    const { error: workOrdersError } = await supabase
       .from('work_orders')
       .delete()
       .eq('user_id', user.id)
 
-    if (ordersError) {
-      console.error('Error deleting work orders:', ordersError)
+    if (workOrdersError) {
+      console.error('Error deleting work orders:', workOrdersError)
       return NextResponse.json({ error: 'Failed to delete work orders' }, { status: 500 })
     }
 
-    // 3. Delete all clients
+    // 10. Delete all clients
     const { error: clientsError } = await supabase
       .from('clients')
       .delete()
@@ -55,7 +140,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete clients' }, { status: 500 })
     }
 
-    // 4. Delete all services
+    // 11. Delete all services
     const { error: servicesDeleteError } = await supabase
       .from('services')
       .delete()
@@ -66,7 +151,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete services' }, { status: 500 })
     }
 
-    // 5. Delete all workers
+    // 12. Delete all workers
     const { error: workersError } = await supabase
       .from('workers')
       .delete()
@@ -77,18 +162,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete workers' }, { status: 500 })
     }
 
-    // 6. Delete QuickBooks integration
-    const { error: qbError } = await supabase
-      .from('quickbooks_integrations')
-      .delete()
-      .eq('user_id', user.id)
-
-    if (qbError) {
-      console.error('Error deleting QuickBooks integration:', qbError)
-      // Don't fail the deletion for this, just log it
-    }
-
-    // 7. Delete user profile
+    // 13. Delete user profile
     const { error: profileError } = await supabase
       .from('users')
       .delete()
@@ -99,13 +173,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete user profile' }, { status: 500 })
     }
 
-    // 8. Sign out the user (this will invalidate their session)
-    const { error: signOutError } = await supabase.auth.signOut()
+    // 14. Delete the actual auth user account
+    const { error: deleteUserError } = await supabase.auth.admin.deleteUser(user.id)
     
-    if (signOutError) {
-      console.error('Error signing out user:', signOutError)
-      // Don't fail the deletion for this, just log it
+    if (deleteUserError) {
+      console.error('Error deleting auth user:', deleteUserError)
+      return NextResponse.json({ error: 'Failed to delete user account' }, { status: 500 })
     }
+
+    console.log(`Successfully deleted account for user: ${user.email}`)
 
     return NextResponse.json({ 
       success: true, 

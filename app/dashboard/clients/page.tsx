@@ -57,9 +57,15 @@ export default function ClientsPage() {
 
   const fetchClients = async () => {
     try {
+      console.log('Fetching clients...')
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        console.log('No user found')
+        return
+      }
+
+      console.log('User authenticated:', user.id)
 
       // Build query parameters
       const params = new URLSearchParams({
@@ -79,14 +85,20 @@ export default function ClientsPage() {
         params.append('clientType', clientTypeFilter)
       }
 
+      const apiUrl = `/api/clients?${params.toString()}`
+      console.log('Fetching from:', apiUrl)
+
       // Use the API endpoint for pagination and filtering
-      const response = await fetch(`/api/clients?${params.toString()}`)
+      const response = await fetch(apiUrl)
       const data = await response.json()
+
+      console.log('API response:', data)
 
       if (response.ok) {
         setClients(data.clients || [])
         setTotalClients(data.pagination.total || 0)
         setTotalPages(data.pagination.totalPages || 0)
+        console.log('Clients set:', data.clients?.length || 0)
       } else {
         console.error('Error fetching clients:', data.error)
       }
@@ -673,6 +685,7 @@ export default function ClientsPage() {
                       size="sm"
                       onClick={handleSelectAll}
                       className="h-6 w-6 p-0"
+                      aria-label={selectedClients.size === filteredClients.length ? 'Deselect all clients' : 'Select all clients'}
                     >
                       {selectedClients.size === filteredClients.length ? (
                         <CheckSquare className="h-4 w-4" />
@@ -698,6 +711,7 @@ export default function ClientsPage() {
                         size="sm"
                         onClick={() => handleSelectClient(client.id)}
                         className="h-6 w-6 p-0"
+                        aria-label={selectedClients.has(client.id) ? `Deselect client ${client.name}` : `Select client ${client.name}`}
                       >
                         {selectedClients.has(client.id) ? (
                           <CheckSquare className="h-4 w-4" />
@@ -754,6 +768,7 @@ export default function ClientsPage() {
                           size="sm"
                           onClick={() => handleToggleStatus(client)}
                           className="h-7 px-2 text-xs"
+                          aria-label={`${client.is_active ? 'Deactivate' : 'Activate'} client ${client.name}`}
                         >
                           {client.is_active ? 'Deactivate' : 'Activate'}
                         </Button>
@@ -762,6 +777,7 @@ export default function ClientsPage() {
                           size="sm"
                           onClick={() => handleEdit(client)}
                           className="h-7 px-2 text-xs"
+                          aria-label={`Edit client ${client.name}`}
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -770,6 +786,7 @@ export default function ClientsPage() {
                           size="sm"
                           onClick={() => handleDelete(client.id)}
                           className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                          aria-label={`Delete client ${client.name}`}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>

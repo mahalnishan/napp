@@ -30,7 +30,7 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?registration=false`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -54,10 +54,10 @@ function LoginForm() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Welcome to nApp
+            Welcome to Effortless
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in with your Google account to get started
+            Sign in with your Google account to access your dashboard
           </p>
         </div>
         <Card>
@@ -96,6 +96,15 @@ function LoginForm() {
                 </div>
               )}
             </Button>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{' '}
+                <Link href="/auth/register" className="text-blue-600 hover:text-blue-500 font-medium">
+                  Sign up here
+                </Link>
+              </p>
+            </div>
 
             <div className="text-center">
               <p className="text-xs text-gray-500">

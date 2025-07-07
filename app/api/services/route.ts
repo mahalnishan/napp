@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
       name,
       description,
       price,
-      quickbooks_service_id
     } = body
 
     // Validate required fields
@@ -105,7 +104,6 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         price: parseFloat(price),
-        quickbooks_service_id: quickbooks_service_id?.trim() || null
       })
       .select()
       .single()

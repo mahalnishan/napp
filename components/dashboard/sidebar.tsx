@@ -4,9 +4,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { LogOut, Settings, Users, FileText, Package, Home, BarChart3, User, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { LogOut, Settings, Users, FileText, Package, Home, BarChart3, User, ChevronLeft, ChevronRight, Shield } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSidebar } from '@/app/dashboard/layout'
+import { OptimizedImage } from '@/components/optimized-image'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,31 +30,32 @@ export function Sidebar() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const { collapsed, setCollapsed } = useSidebar()
 
-  useEffect(() => {
-    const getUser = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+  const getUser = useCallback(async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    setUser(user)
+    
+    if (user) {
+      // Fetch user profile data
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single()
       
-      if (user) {
-        // Fetch user profile data
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        
-        setUserProfile(profile)
-      }
+      setUserProfile(profile)
     }
-    getUser()
   }, [])
 
-  const handleSignOut = async () => {
+  useEffect(() => {
+    getUser()
+  }, [getUser])
+
+  const handleSignOut = useCallback(async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/auth/login')
-  }
+  }, [router])
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -62,6 +64,10 @@ export function Sidebar() {
     { name: 'Clients', href: '/dashboard/clients', icon: Users },
     { name: 'Services', href: '/dashboard/services', icon: Package },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+    // Show Admin Panel link only for the developer user
+    ...(user?.email === 'nishan.mahal71@gmail.com' ? [
+      { name: 'Admin Panel', href: '/admin', icon: Shield }
+    ] : []),
   ]
 
   return (
@@ -72,7 +78,7 @@ export function Sidebar() {
         {/* Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
           {!collapsed && (
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">nApp</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Effortless</h1>
           )}
           <Button
             variant="ghost"
@@ -112,32 +118,24 @@ export function Sidebar() {
               {collapsed ? (
                 // Show only profile picture when collapsed
                 <div className="flex justify-center">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {userProfile?.avatar_url ? (
-                      <img 
-                        src={userProfile.avatar_url} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-4 w-4 text-gray-400" />
-                    )}
-                  </div>
+                  <OptimizedImage
+                    src={userProfile?.avatar_url || null}
+                    alt="Profile"
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
                 </div>
               ) : (
                 // Show name and profile picture when expanded
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {userProfile?.avatar_url ? (
-                      <img 
-                        src={userProfile.avatar_url} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-4 w-4 text-gray-400" />
-                    )}
-                  </div>
+                  <OptimizedImage
+                    src={userProfile?.avatar_url || null}
+                    alt="Profile"
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {userProfile?.name || user.email}
@@ -146,6 +144,12 @@ export function Sidebar() {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {user.email}
                       </p>
+                    )}
+                    {user?.email === 'nishan.mahal71@gmail.com' && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <Shield className="h-3 w-3 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">Admin</span>
+                      </div>
                     )}
                   </div>
                 </div>

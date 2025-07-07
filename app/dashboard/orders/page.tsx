@@ -28,8 +28,6 @@ export default function OrdersPage() {
   const [showBulkActions, setShowBulkActions] = useState(false)
   const [showBulkEditModal, setShowBulkEditModal] = useState(false)
   const [bulkEditLoading, setBulkEditLoading] = useState(false)
-  const [bulkSyncLoading, setBulkSyncLoading] = useState(false)
-  const [syncAllLoading, setSyncAllLoading] = useState(false)
   const [sortField, setSortField] = useState('created_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [viewMode, setViewMode] = useState<'list' | 'schedule'>('list')
@@ -266,123 +264,6 @@ export default function OrdersPage() {
     }
   }
 
-  const handleBulkSyncWithQuickBooks = async () => {
-    if (selectedOrders.size === 0) return
-    
-    setBulkSyncLoading(true)
-    
-    try {
-      const orderIds = Array.from(selectedOrders)
-      let successCount = 0
-      let errorCount = 0
-      const errors: string[] = []
-      
-      // Sync each order individually
-      for (const orderId of orderIds) {
-        try {
-          const response = await fetch('/api/quickbooks/sync-order-status', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ orderId }),
-          })
-
-          if (response.ok) {
-            successCount++
-          } else {
-            errorCount++
-            const data = await response.json()
-            errors.push(`Order ${orderId}: ${data.error || 'Unknown error'}`)
-          }
-        } catch (error) {
-          errorCount++
-          errors.push(`Order ${orderId}: Network error`)
-        }
-      }
-      
-      // Show results
-      if (errorCount === 0) {
-        alert(`Successfully synced ${successCount} order(s) with QuickBooks!`)
-      } else {
-        alert(`Synced ${successCount} order(s) successfully, ${errorCount} failed.\n\nErrors:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...and more' : ''}`)
-      }
-      
-      // Refresh orders and clear selection
-      await fetchOrders()
-      setSelectedOrders(new Set())
-      setBulkAction('')
-      setShowBulkActions(false)
-    } catch (error) {
-      console.error('Bulk sync error:', error)
-      alert('Failed to perform bulk sync')
-    } finally {
-      setBulkSyncLoading(false)
-    }
-  }
-
-  const handleSyncAllWithQuickBooks = async () => {
-    if (orders.length === 0) {
-      alert('No orders to sync')
-      return
-    }
-    
-    if (!confirm(`Are you sure you want to sync all ${orders.length} orders with QuickBooks? This may take a few minutes.`)) {
-      return
-    }
-    
-    setSyncAllLoading(true)
-    
-    try {
-      const orderIds = orders.map(order => order.id)
-      let successCount = 0
-      let errorCount = 0
-      const errors: string[] = []
-      
-      // Sync each order individually
-      for (const orderId of orderIds) {
-        try {
-          const response = await fetch('/api/quickbooks/sync-order-status', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ orderId }),
-          })
-
-          if (response.ok) {
-            successCount++
-          } else {
-            errorCount++
-            const data = await response.json()
-            errors.push(`Order ${orderId}: ${data.error || 'Unknown error'}`)
-          }
-        } catch (error) {
-          errorCount++
-          errors.push(`Order ${orderId}: Network error`)
-        }
-        
-        // Add a small delay to avoid overwhelming the API
-        await new Promise(resolve => setTimeout(resolve, 200))
-      }
-      
-      // Show results
-      if (errorCount === 0) {
-        alert(`Successfully synced all ${successCount} orders with QuickBooks!`)
-      } else {
-        alert(`Synced ${successCount} orders successfully, ${errorCount} failed.\n\nErrors:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...and more' : ''}`)
-      }
-      
-      // Refresh orders
-      await fetchOrders()
-    } catch (error) {
-      console.error('Sync all error:', error)
-      alert('Failed to sync all orders with QuickBooks')
-    } finally {
-      setSyncAllLoading(false)
-    }
-  }
-
   const handleBulkAction = async () => {
     if (!bulkAction || selectedOrders.size === 0) return
 
@@ -392,10 +273,6 @@ export default function OrdersPage() {
       switch (bulkAction) {
         case 'edit':
           setShowBulkEditModal(true)
-          return
-
-        case 'sync_quickbooks':
-          await handleBulkSyncWithQuickBooks()
           return
 
         case 'delete':
@@ -715,24 +592,6 @@ export default function OrdersPage() {
           <p className="text-sm text-muted-foreground">Manage and track your work orders</p>
         </div>
         <div className="flex space-x-2">
-          <Button 
-            onClick={handleSyncAllWithQuickBooks} 
-            disabled={syncAllLoading || orders.length === 0}
-            variant="outline" 
-            size="sm"
-          >
-            {syncAllLoading ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Syncing All...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Sync All with QB
-              </>
-            )}
-          </Button>
           <Button onClick={handleExport} variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
             Export {selectedOrders.size > 0 && `(${selectedOrders.size})`}
@@ -861,7 +720,6 @@ export default function OrdersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="edit">Edit Selected</SelectItem>
-                    <SelectItem value="sync_quickbooks">Sync with QuickBooks</SelectItem>
                     <SelectItem value="delete">Delete Selected</SelectItem>
                   </SelectContent>
                 </Select>
@@ -906,16 +764,63 @@ export default function OrdersPage() {
                         )}
                       </Button>
                     </th>
-                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('client')}>
+                    <th 
+                      className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" 
+                      onClick={() => handleSort('id')} 
+                      tabIndex={0}
+                      aria-label={`Sort by ID ${sortField === 'id' ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSort('id')
+                        }
+                      }}
+                    >
+                      Order ID {sortField === 'id' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('client')} tabIndex={0} aria-label="Sort by client ascending">
                       Client {sortField === 'client' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>
+                    <th 
+                      className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" 
+                      onClick={() => handleSort('status')}
+                      tabIndex={0}
+                      aria-label={`Sort by status ${sortField === 'status' ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSort('status')
+                        }
+                      }}
+                    >
                       Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('order_amount')}>
+                    <th 
+                      className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" 
+                      onClick={() => handleSort('order_amount')}
+                      tabIndex={0}
+                      aria-label={`Sort by total amount ${sortField === 'order_amount' ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSort('order_amount')
+                        }
+                      }}
+                    >
                       Total {sortField === 'order_amount' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" onClick={() => handleSort('created_at')}>
+                    <th 
+                      className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" 
+                      onClick={() => handleSort('created_at')}
+                      tabIndex={0}
+                      aria-label={`Sort by creation date ${sortField === 'created_at' ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSort('created_at')
+                        }
+                      }}
+                    >
                       Created {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
                     <th className="text-left p-3 text-sm font-medium">Actions</th>
@@ -930,6 +835,7 @@ export default function OrdersPage() {
                           size="sm"
                           onClick={() => handleSelectOrder(order.id)}
                           className="h-6 w-6 p-0"
+                          aria-label={selectedOrders.has(order.id) ? `Deselect order ${order.id}` : `Select order ${order.id}`}
                         >
                           {selectedOrders.has(order.id) ? (
                             <CheckSquare className="h-4 w-4" />
@@ -938,6 +844,7 @@ export default function OrdersPage() {
                           )}
                         </Button>
                       </td>
+                      <td className="p-3 text-xs font-mono text-muted-foreground">{order.id.slice(0,8)}</td>
                       <td className="p-3">
                         <div>
                           <div className="font-medium text-sm">{order.client?.name || 'Unknown'}</div>
@@ -969,16 +876,53 @@ export default function OrdersPage() {
                       <td className="p-3">
                         <div className="flex space-x-1">
                           <Link href={`/dashboard/orders/${order.id}`}>
-                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">View</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 px-2 text-xs"
+                              aria-label={`View order ${order.id}`}
+                            >
+                              View
+                            </Button>
                           </Link>
                           <Link href={`/dashboard/orders/${order.id}/edit`}>
-                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs">Edit</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 px-2 text-xs"
+                              aria-label={`Edit order ${order.id}`}
+                            >
+                              Edit
+                            </Button>
                           </Link>
+                          {!order.quickbooks_invoice_id ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 px-2 text-xs text-green-600 hover:text-green-700"
+                              onClick={async () => {
+                                const res = await fetch(`/api/orders/${order.id}/invoice`, { method: 'POST' })
+                                const data = await res.json()
+                                if (res.ok) {
+                                  alert('Invoice sent!')
+                                  fetchOrders()
+                                } else {
+                                  alert(data.error || 'Error sending invoice')
+                                }
+                              }}
+                              aria-label={`Send invoice for order ${order.id}`}
+                            >
+                              Send Invoice
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-gray-500">Invoiced</span>
+                          )}
                           <Button 
                             size="sm" 
                             variant="outline" 
                             className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
                             onClick={() => handleDelete(order.id)}
+                            aria-label={`Delete order ${order.id}`}
                           >
                             Delete
                           </Button>

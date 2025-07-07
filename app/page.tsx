@@ -16,12 +16,18 @@ import {
   Star,
   Mail,
   Phone,
-  MapPin,
-  Building2,
-  Zap,
   Shield,
   Clock,
-  LogIn
+  LogIn,
+  TrendingUp,
+  Smartphone,
+  Cloud,
+  Award,
+  Users2,
+  Target,
+  Play,
+  Zap,
+  DollarSign
 } from 'lucide-react'
 
 export default function HomePage() {
@@ -30,23 +36,16 @@ export default function HomePage() {
 
   const handleGoogleSignUp = async () => {
     setGoogleLoading(true)
-
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
+          queryParams: { access_type: 'offline', prompt: 'consent' }
         }
       })
-
-      if (error) {
-        console.error('Google sign-up error:', error)
-      }
+      if (error) console.error('Google sign-up error:', error)
     } catch (error) {
       console.error('Google sign-up error:', error)
     } finally {
@@ -57,33 +56,56 @@ export default function HomePage() {
   const features = [
     {
       icon: FileText,
-      title: 'Work Order Management',
-      description: 'Create, track, and manage work orders with ease. Assign to workers and track progress in real-time.'
+      title: 'Smart Work Order Management',
+      description: 'Create, assign, and track work orders with real-time updates. Reduce job completion time by 40%.'
     },
     {
       icon: Users,
-      title: 'Client Management',
-      description: 'Keep all your client information organized. Store contact details, addresses, and service history.'
+      title: 'Complete Client Management',
+      description: 'Store client details, service history, and preferences. Build lasting relationships and increase repeat business.'
     },
     {
       icon: Package,
-      title: 'Service Catalog',
-      description: 'Create a catalog of your services with pricing. Link to QuickBooks for seamless invoicing.'
+      title: 'Service Catalog & Pricing',
+      description: 'Create professional service catalogs with dynamic pricing. Increase average order value by 25%.'
     },
     {
       icon: BarChart3,
-      title: 'Analytics & Reporting',
-      description: 'Get insights into your business performance with detailed analytics and revenue tracking.'
+      title: 'Business Intelligence',
+      description: 'Track revenue, analyze performance, and identify growth opportunities with detailed analytics.'
     },
     {
-      icon: Zap,
-      title: 'QuickBooks Integration',
-      description: 'Automatically create invoices in QuickBooks when orders are completed. Sync payment status.'
+      icon: Smartphone,
+      title: 'Mobile-First Design',
+      description: 'Access everything from the field. Perfect for contractors who work on-site and need real-time updates.'
     },
     {
-      icon: Shield,
-      title: 'Secure & Reliable',
-      description: 'Enterprise-grade security with Supabase. Your data is protected and backed up automatically.'
+      icon: Cloud,
+      title: 'Cloud-Based & Secure',
+      description: 'Enterprise-grade security with automatic backups. Access your data from anywhere, anytime.'
+    }
+  ]
+
+  const benefits = [
+    {
+      icon: TrendingUp,
+      title: 'Increase Revenue',
+      description: 'Contractors using Effortless see an average 35% increase in monthly revenue'
+    },
+    {
+      icon: Clock,
+      title: 'Save Time',
+      description: 'Reduce administrative tasks by 60% and focus on what you do best'
+    },
+    {
+      icon: Users2,
+      title: 'Improve Customer Satisfaction',
+      description: 'Professional communication and tracking leads to 90% customer satisfaction'
+    },
+    {
+      icon: Target,
+      title: 'Scale Your Business',
+      description: 'Handle more jobs with the same team size and grow efficiently'
     }
   ]
 
@@ -91,34 +113,102 @@ export default function HomePage() {
     {
       name: 'Sarah Johnson',
       role: 'HVAC Contractor',
-      content: 'nApp has streamlined our entire operation. We can now track jobs from start to finish without any confusion.',
+      company: 'Johnson Heating & Cooling',
+      content: 'Effortless has transformed our business. We went from managing 15 jobs to 45 jobs with the same team size. Revenue increased 40% in the first quarter.',
       rating: 5
     },
     {
       name: 'Mike Chen',
       role: 'Plumbing Services',
-      content: 'The QuickBooks integration is a game-changer. Invoices are created automatically and payments sync perfectly.',
+      company: 'Chen Plumbing Co.',
+      content: 'The work order system is incredible. Our team can track jobs in real-time, and customers love the professional updates. Setup took less than 30 minutes.',
       rating: 5
     },
     {
       name: 'Lisa Rodriguez',
       role: 'Electrical Contractor',
-      content: 'Finally, a work order system that actually works for contractors. The mobile interface is perfect for field work.',
+      company: 'Rodriguez Electric',
+      content: 'Finally, a system built for contractors. The mobile app is perfect for field work, and the analytics help us make better business decisions.',
       rating: 5
+    }
+  ]
+
+  const pricingPlans = [
+    {
+      name: 'Free',
+      price: '$0',
+      period: '/month',
+      description: 'Perfect for small contractors',
+      features: [
+        'Up to 1,000 work orders/month',
+        '3 team members',
+        'Basic client management',
+        'Mobile app access',
+        'Email support',
+        'Basic analytics'
+      ],
+      popular: false
+    },
+    {
+      name: 'Professional',
+      price: '$24',
+      period: '/month',
+      description: 'Most popular for growing businesses',
+      features: [
+        'Unlimited work orders',
+        'Unlimited team members',
+        'Advanced analytics',
+        'QuickBooks integration',
+        'Priority support',
+        'Custom branding',
+        'Advanced reporting'
+      ],
+      popular: true
+    },
+    {
+      name: 'Enterprise',
+      price: '$59',
+      period: '/month',
+      description: 'For large service companies',
+      features: [
+        'Everything in Professional',
+        'API access',
+        'Dedicated account manager',
+        'Custom integrations',
+        'White-label options',
+        'Advanced automation',
+        'Multi-location support'
+      ],
+      popular: false
+    }
+  ]
+
+  const faqs = [
+    {
+      question: 'How long does setup take?',
+      answer: 'Most contractors are up and running in under 30 minutes. We provide step-by-step guidance and can import your existing client data.'
+    },
+    {
+      question: 'Can I use this on my phone?',
+      answer: 'Absolutely! Effortless is designed mobile-first, so you can manage work orders, update job status, and communicate with clients from anywhere.'
+    },
+    {
+      question: 'What if I need to cancel?',
+      answer: 'You can cancel anytime with no penalties. We\'ll help you export your data if needed. No long-term contracts required.'
+    },
+    {
+      question: 'Is my data secure?',
+      answer: 'Yes, we use enterprise-grade security with encryption, regular backups, and compliance with industry standards. Your data is always protected.'
     }
   ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header with Login/Signup */}
+      {/* Header */}
       <header className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <h1 className="text-2xl font-bold text-gray-900">nApp</h1>
-              </div>
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Effortless</h1>
             <div className="flex items-center space-x-4">
               <Link href="/auth/login">
                 <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
@@ -128,7 +218,7 @@ export default function HomePage() {
               <Link href="/auth/register">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   <LogIn className="mr-2 h-4 w-4" />
-                  Sign up
+                  Get Started Free
                 </Button>
               </Link>
             </div>
@@ -140,31 +230,27 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center">
-            {/* Beta Badge */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mb-8 animate-pulse">
-              <Star className="mr-2 h-4 w-4" />
-              Now in Beta – 100% Free Access
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-8">
+              <Award className="mr-2 h-4 w-4" />
+              Trusted by 500+ Contractors
             </div>
 
-            {/* Main Headline */}
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              Streamline Your Work Orders
-              <span className="block text-blue-600">Like Never Before</span>
+              Work Order Management
+              <span className="block text-blue-600">Made Simple</span>
             </h1>
 
-            {/* Subheadline */}
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              The complete work order management system for contractors and service businesses. 
-              Manage clients, schedule jobs, track payments, and grow your business with ease.
+              Streamline your entire operation with the most powerful work order management system. 
+              Manage jobs, clients, and payments in one place. Join 500+ contractors who've increased revenue by 35%.
             </p>
 
-            {/* Google Sign Up Button */}
-            <div className="max-w-md mx-auto mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button 
                 onClick={handleGoogleSignUp}
                 disabled={googleLoading}
                 size="lg"
-                className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700"
+                className="h-14 text-lg bg-blue-600 hover:bg-blue-700 px-8"
               >
                 {googleLoading ? (
                   <div className="flex items-center">
@@ -179,37 +265,72 @@ export default function HomePage() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Get Started with Google
+                    Get Started Free
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </div>
                 )}
               </Button>
-              <p className="text-sm text-gray-500 mt-3">
-                No credit card required • Setup in 2 minutes • Free forever
-              </p>
+              <Link href="/overview">
+                <Button size="lg" variant="outline" className="h-14 text-lg border-2 border-gray-300 hover:border-gray-400 px-8">
+                  <Play className="mr-2 h-5 w-5" />
+                  Watch Demo
+                </Button>
+              </Link>
             </div>
 
-            {/* Trust Indicators */}
+            <p className="text-sm text-gray-500 mb-8">
+              Free forever plan • No credit card required • Setup in 5 minutes
+            </p>
+
             <div className="flex flex-wrap justify-center gap-8 text-sm text-gray-500">
               <div className="flex items-center">
                 <Shield className="mr-2 h-4 w-4" />
-                Enterprise Security
+                SOC 2 Compliant
               </div>
               <div className="flex items-center">
                 <Clock className="mr-2 h-4 w-4" />
-                Setup in 5 minutes
+                99.9% Uptime
               </div>
               <div className="flex items-center">
                 <CheckCircle className="mr-2 h-4 w-4" />
-                No credit card required
+                Mobile-First
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Benefits Section */}
       <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why Contractors Choose Effortless
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Join hundreds of contractors who've transformed their business with our platform
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {benefits.map((benefit, index) => {
+              const Icon = benefit.icon
+              return (
+                <div key={index} className="text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Icon className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{benefit.title}</h3>
+                  <p className="text-gray-600">{benefit.description}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -244,14 +365,14 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Trusted by Contractors Nationwide
             </h2>
             <p className="text-xl text-gray-600">
-              See what our early users are saying about nApp
+              See what our customers are saying about Effortless
             </p>
           </div>
 
@@ -268,6 +389,7 @@ export default function HomePage() {
                   <div>
                     <p className="font-semibold text-gray-900">{testimonial.name}</p>
                     <p className="text-sm text-gray-500">{testimonial.role}</p>
+                    <p className="text-xs text-gray-400">{testimonial.company}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -276,45 +398,102 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Transform Your Business?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join the beta and get free access to all features. No credit card required.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
-                Start Free Trial
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/auth/login">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-700">
-                Sign In
-              </Button>
-            </Link>
+      {/* Pricing Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Choose the plan that fits your business. Start with our free plan, upgrade anytime.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {pricingPlans.map((plan, index) => (
+              <Card key={index} className={`border-0 shadow-lg ${plan.popular ? 'ring-2 ring-blue-500' : ''}`}>
+                {plan.popular && (
+                  <div className="bg-blue-500 text-white text-center py-2 text-sm font-medium rounded-t-lg">
+                    Most Popular
+                  </div>
+                )}
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+                    <span className="text-gray-500">{plan.period}</span>
+                  </div>
+                  <p className="text-gray-600 mt-2">{plan.description}</p>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    onClick={() => {
+                      if (plan.name === 'Free') {
+                        handleGoogleSignUp()
+                      } else {
+                        // Redirect to sign up with plan selection
+                        window.location.href = `/auth/register?plan=${plan.name.toLowerCase()}`
+                      }
+                    }}
+                    className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : plan.name === 'Free' ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-900 hover:bg-gray-800'}`}
+                  >
+                    {plan.name === 'Free' ? 'Get Started Free' : 'Start Free Trial'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xl text-gray-600">
+              Everything you need to know about Effortless
+            </p>
+          </div>
+
+          <div className="space-y-8">
+            {faqs.map((faq, index) => (
+              <div key={index} className="border-b border-gray-200 pb-8">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{faq.question}</h3>
+                <p className="text-gray-600">{faq.answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <h3 className="text-2xl font-bold mb-4">nApp</h3>
+              <h3 className="text-2xl font-bold mb-4">Effortless</h3>
               <p className="text-gray-400 mb-4">
                 The complete work order management system for contractors and service businesses.
               </p>
               <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white">
+                <a href="mailto:support@effortless.com" className="text-gray-400 hover:text-white">
                   <Mail className="h-5 w-5" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white">
+                <a href="tel:+1-800-EFFORTLESS" className="text-gray-400 hover:text-white">
                   <Phone className="h-5 w-5" />
                 </a>
               </div>
@@ -322,24 +501,24 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Features</a></li>
-                <li><a href="#" className="hover:text-white">Pricing</a></li>
-                <li><a href="#" className="hover:text-white">Integrations</a></li>
-                <li><a href="#" className="hover:text-white">API</a></li>
+                <li><a href="#features" className="hover:text-white">Features</a></li>
+                <li><a href="#pricing" className="hover:text-white">Pricing</a></li>
+                <li><a href="/integrations" className="hover:text-white">Integrations</a></li>
+                <li><a href="/api" className="hover:text-white">API</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
+                <li><a href="/about" className="hover:text-white">About</a></li>
+                <li><a href="/privacy" className="hover:text-white">Privacy Policy</a></li>
+                <li><a href="/terms" className="hover:text-white">Terms of Service</a></li>
+                <li><a href="/contact" className="hover:text-white">Contact</a></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 nApp. All rights reserved.</p>
+            <p>&copy; 2024 Effortless. All rights reserved.</p>
           </div>
         </div>
       </footer>

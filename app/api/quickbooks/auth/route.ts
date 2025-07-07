@@ -1,93 +1,44 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { quickbooksAPI } from '@/lib/quickbooks'
+import { cookies } from 'next/headers'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('QuickBooks auth GET started')
-    
-    const clientId = process.env.QUICKBOOKS_CLIENT_ID
-    const redirectUri = process.env.QUICKBOOKS_REDIRECT_URI
-    
-    console.log('Auth environment check:', {
-      hasClientId: !!clientId,
-      hasRedirectUri: !!redirectUri,
-      redirectUri
-    })
-    
-    if (!clientId) {
-      console.error('QuickBooks client ID not configured')
-      return NextResponse.json({ error: 'QuickBooks client ID not configured' }, { status: 500 })
-    }
-
-    if (!redirectUri) {
-      console.error('QuickBooks redirect URI not configured')
-      return NextResponse.json({ error: 'QuickBooks redirect URI not configured' }, { status: 500 })
-    }
-
-    const authUrl = new URL('https://appcenter.intuit.com/connect/oauth2')
-    authUrl.searchParams.set('client_id', clientId)
-    authUrl.searchParams.set('response_type', 'code')
-    authUrl.searchParams.set('scope', 'com.intuit.quickbooks.accounting')
-    authUrl.searchParams.set('redirect_uri', redirectUri)
-    authUrl.searchParams.set('state', Date.now().toString())
-
-    console.log('Generated auth URL:', authUrl.toString())
-    
-    return NextResponse.json({ authUrl: authUrl.toString() })
-  } catch (error) {
-    console.error('QuickBooks auth GET error:', error)
-    return NextResponse.json({ error: 'Failed to generate auth URL' }, { status: 500 })
-  }
-}
-
-export async function POST() {
-  try {
-    console.log('QuickBooks auth POST started')
-    
     const supabase = await createClient()
     
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      console.error('No user found in auth POST')
+    // Get the current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('User authenticated in auth POST:', user.id)
+    // Generate a random state for security
+    const state = crypto.randomUUID()
+    
+    // Generate the authorization URL
+    const authUrl = quickbooksAPI.getAuthorizationURL(state)
+    
+    // Store the state in the database for verification
+    const { error: insertError } = await supabase
+      .from('quickbooks_integrations')
+      .upsert({
+        user_id: user.id,
+        access_token: '', // Will be filled after OAuth
+        refresh_token: '', // Will be filled after OAuth
+        realm_id: '', // Will be filled after OAuth
+        state: state,
+        expires_at: new Date().toISOString() // Will be updated after OAuth
+      })
 
-    // QuickBooks OAuth configuration
-    const clientId = process.env.QUICKBOOKS_CLIENT_ID
-    const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET
-    const redirectUri = process.env.QUICKBOOKS_REDIRECT_URI
-
-    console.log('Auth POST environment check:', {
-      hasClientId: !!clientId,
-      hasClientSecret: !!clientSecret,
-      hasRedirectUri: !!redirectUri,
-      redirectUri
-    })
-
-    if (!clientId || !clientSecret || !redirectUri) {
-      console.error('QuickBooks configuration missing in auth POST')
-      return NextResponse.json(
-        { error: 'QuickBooks configuration missing' },
-        { status: 500 }
-      )
+    if (insertError) {
+      console.error('Error storing QuickBooks state:', insertError)
+      return NextResponse.json({ error: 'Failed to initialize QuickBooks connection' }, { status: 500 })
     }
-
-    // Generate OAuth URL
-    const authUrl = `https://appcenter.intuit.com/connect/oauth2?client_id=${clientId}&response_type=code&scope=com.intuit.quickbooks.accounting&redirect_uri=${encodeURIComponent(redirectUri)}&state=${user.id}`
-
-    console.log('Generated auth URL in POST:', authUrl)
 
     return NextResponse.json({ authUrl })
   } catch (error) {
-    console.error('QuickBooks auth POST error:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate auth URL' },
-      { status: 500 }
-    )
+    console.error('QuickBooks auth error:', error)
+    return NextResponse.json({ error: 'Failed to generate authorization URL' }, { status: 500 })
   }
 } 

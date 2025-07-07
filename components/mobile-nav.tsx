@@ -14,7 +14,8 @@ import {
   LogOut, 
   Menu,
   X,
-  BarChart3
+  BarChart3,
+  Shield
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -50,6 +51,10 @@ export function MobileNav() {
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Clients', href: '/dashboard/clients', icon: Users },
     { name: 'Services', href: '/dashboard/services', icon: Package },
+    // Show Admin Panel link only for the developer user
+    ...(user?.email === 'nishan.mahal71@gmail.com' ? [
+      { name: 'Admin Panel', href: '/admin', icon: Shield }
+    ] : []),
   ]
 
   return (
@@ -74,7 +79,7 @@ export function MobileNav() {
             <div className="flex h-full flex-col">
               {/* Header */}
               <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">nApp</h1>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Effortless</h1>
                 <Button
                   variant="ghost"
                   size="sm"

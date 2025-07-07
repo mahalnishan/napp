@@ -1,91 +1,86 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useSupabaseQuery } from '@/lib/hooks/useOptimizedQuery'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, DollarSign, FileText, Users, Package, TrendingUp, Calendar, Clock } from 'lucide-react'
+import { Plus, DollarSign, FileText, Users, Package, TrendingUp, Calendar, Clock, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { DashboardStats, WorkOrderWithDetails } from '@/lib/types'
+import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
 
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<DashboardStats>({
-    totalOrders: 0,
-    totalClients: 0,
-    totalServices: 0,
-    totalRevenue: 0,
-    pendingOrders: 0,
-    completedOrders: 0
-  })
-  const [recentOrders, setRecentOrders] = useState<WorkOrderWithDetails[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
+  // Get user ID once
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user) {
-          return
-        }
-
-        // Fetch dashboard stats
-        const [
-          { count: totalOrders },
-          { count: totalClients },
-          { count: totalServices },
-          { data: orders },
-          { count: pendingOrders },
-          { count: completedOrders }
-        ] = await Promise.all([
-          supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('services').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-          supabase.from('work_orders').select('order_amount').eq('user_id', user.id),
-          supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', user.id).in('status', ['Pending', 'In Progress']),
-          supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'Completed')
-        ])
-
-        const totalRevenue = orders?.reduce((sum, order) => sum + (order.order_amount || 0), 0) || 0
-
-        const statsData: DashboardStats = {
-          totalOrders: totalOrders || 0,
-          totalClients: totalClients || 0,
-          totalServices: totalServices || 0,
-          totalRevenue,
-          pendingOrders: pendingOrders || 0,
-          completedOrders: completedOrders || 0
-        }
-
-        // Fetch recent orders
-        const { data: ordersData } = await supabase
-          .from('work_orders')
-          .select(`
-            *,
-            client:clients(*),
-            worker:workers(*),
-            services:work_order_services(
-              *,
-              service:services(*)
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5)
-
-        setStats(statsData)
-        setRecentOrders(ordersData || [])
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      } finally {
-        setLoading(false)
-      }
+    const getUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setUserId(user?.id || null)
+      setUserEmail(user?.email || null)
     }
-
-    fetchData()
+    getUser()
   }, [])
+
+  // Optimized queries with caching
+  const { data: stats, loading: statsLoading, error: statsError } = useSupabaseQuery<DashboardStats>(
+    `dashboard-stats-${userId}`,
+    (supabase) => {
+      if (!userId) return Promise.resolve({ data: null, error: null })
+      
+      return Promise.all([
+        supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('clients').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('services').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('work_orders').select('order_amount').eq('user_id', userId),
+        supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', userId).in('status', ['Pending', 'In Progress']),
+        supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'Completed')
+      ]).then(([orders, clients, services, revenueData, pending, completed]) => {
+        const totalRevenue = revenueData.data?.reduce((sum: number, order: { order_amount: number }) => sum + (order.order_amount || 0), 0) || 0
+        
+        return {
+          data: {
+            totalOrders: orders.count || 0,
+            totalClients: clients.count || 0,
+            totalServices: services.count || 0,
+            totalRevenue,
+            pendingOrders: pending.count || 0,
+            completedOrders: completed.count || 0
+          },
+          error: null
+        }
+      })
+    },
+    { enabled: !!userId, staleTime: 2 * 60 * 1000 } // 2 minutes cache
+  )
+
+  const { data: recentOrders, loading: ordersLoading } = useSupabaseQuery<WorkOrderWithDetails[]>(
+    `recent-orders-${userId}`,
+    (supabase) => {
+      if (!userId) return Promise.resolve({ data: null, error: null })
+      
+      return supabase
+        .from('work_orders')
+        .select(`
+          *,
+          client:clients(*),
+          worker:workers(*),
+          services:work_order_services(
+            *,
+            service:services(*)
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(5)
+    },
+    { enabled: !!userId, staleTime: 1 * 60 * 1000 } // 1 minute cache
+  )
+
+  const loading = statsLoading || ordersLoading || !userId
 
   if (loading) {
     return (
@@ -96,17 +91,57 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening with your work orders.</p>
           </div>
         </div>
-        <div className="text-center py-8">
-          <div className="text-gray-500">Loading...</div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     )
   }
 
+  if (statsError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening with your work orders.</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-red-600">
+              Error loading dashboard data. Please try refreshing the page.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const currentStats = stats || {
+    totalOrders: 0,
+    totalClients: 0,
+    totalServices: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+    completedOrders: 0
+  }
+
   const statCards = [
     {
       title: 'Total Revenue',
-      value: formatCurrency(stats.totalRevenue),
+      value: formatCurrency(currentStats.totalRevenue),
       icon: DollarSign,
       description: 'All time earnings',
       trend: '+12.5%',
@@ -114,7 +149,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Total Orders',
-      value: stats.totalOrders.toString(),
+      value: currentStats.totalOrders.toString(),
       icon: FileText,
       description: 'All orders created',
       trend: '+8.2%',
@@ -122,7 +157,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Active Clients',
-      value: stats.totalClients.toString(),
+      value: currentStats.totalClients.toString(),
       icon: Users,
       description: 'Total clients',
       trend: '+5.1%',
@@ -130,7 +165,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Services',
-      value: stats.totalServices.toString(),
+      value: currentStats.totalServices.toString(),
       icon: Package,
       description: 'Available services',
       trend: '+2.3%',
@@ -145,12 +180,22 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening with your work orders.</p>
         </div>
-        <Link href="/dashboard/orders/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Order
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {userEmail === 'nishan.mahal71@gmail.com' && (
+            <Link href="/admin">
+              <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+                <Shield className="mr-2 h-4 w-4" />
+                Admin Panel
+              </Button>
+            </Link>
+          )}
+          <Link href="/dashboard/orders/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Order
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -179,7 +224,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/dashboard/orders/new">
-          <Card className="cursor-pointer">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-primary/10 rounded-lg">
@@ -195,15 +240,15 @@ export default function DashboardPage() {
         </Link>
         
         <Link href="/dashboard/clients">
-          <Card className="cursor-pointer">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <Users className="h-6 w-6 text-green-500" />
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Users className="h-6 w-6 text-blue-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Add Client</h3>
-                  <p className="text-sm text-muted-foreground">Register a new client</p>
+                  <h3 className="font-semibold">Manage Clients</h3>
+                  <p className="text-sm text-muted-foreground">View and edit client information</p>
                 </div>
               </div>
             </CardContent>
@@ -211,15 +256,15 @@ export default function DashboardPage() {
         </Link>
         
         <Link href="/dashboard/services">
-          <Card className="cursor-pointer">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
-                <div className="p-2 bg-purple-500/10 rounded-lg">
-                  <Package className="h-6 w-6 text-purple-500" />
+                <div className="p-2 bg-green-500/10 rounded-lg">
+                  <Package className="h-6 w-6 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Manage Services</h3>
-                  <p className="text-sm text-muted-foreground">Update service offerings</p>
+                  <h3 className="font-semibold">Services</h3>
+                  <p className="text-sm text-muted-foreground">Manage your service offerings</p>
                 </div>
               </div>
             </CardContent>
@@ -228,78 +273,44 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Orders */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Your latest work orders</CardDescription>
-            </div>
-            <Link href="/dashboard/orders">
-              <Button variant="outline" size="sm">
-                View All
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {recentOrders.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-medium text-foreground">No orders yet</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Get started by creating your first order.</p>
-              <div className="mt-6">
-                <Link href="/dashboard/orders/new">
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    New Order
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          ) : (
+      {recentOrders && recentOrders.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Orders</CardTitle>
+            <CardDescription>Your latest work orders</CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
               {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <h4 className="font-medium text-foreground">
-                        {order.client.name}
-                      </h4>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        order.status === 'In Progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                        order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                      }`}>
-                        {order.status}
-                      </span>
+                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <FileText className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="flex items-center space-x-4 mt-1">
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(order.schedule_date_time)}
-                      </p>
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {order.services.length} service{order.services.length !== 1 ? 's' : ''}
+                    <div>
+                      <p className="font-medium">{order.client?.name || 'Unknown Client'}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(order.schedule_date_time)} • {order.status}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium text-foreground">
-                      {formatCurrency(order.order_amount)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {order.order_payment_status}
-                    </div>
+                    <p className="font-medium">{formatCurrency(order.order_amount)}</p>
+                    <p className="text-sm text-muted-foreground">#{order.id.slice(0, 8)}</p>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="mt-4">
+              <Link href="/dashboard/orders">
+                <Button variant="outline" className="w-full">
+                  View All Orders
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 } 

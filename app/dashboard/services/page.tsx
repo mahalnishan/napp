@@ -27,8 +27,7 @@ export default function ServicesPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: '',
-    quickbooks_service_id: ''
+    price: ''
   })
 
   useEffect(() => {
@@ -96,8 +95,7 @@ export default function ServicesPage() {
         user_id: user.id,
         name: formData.name,
         description: formData.description || null,
-        price: parseFloat(formData.price),
-        quickbooks_service_id: formData.quickbooks_service_id || null
+        price: parseFloat(formData.price)
       }
 
       if (editingService) {
@@ -130,8 +128,7 @@ export default function ServicesPage() {
     setFormData({
       name: service.name,
       description: service.description || '',
-      price: service.price.toString(),
-      quickbooks_service_id: service.quickbooks_service_id || ''
+      price: service.price.toString()
     })
     setShowForm(true)
   }
@@ -158,8 +155,7 @@ export default function ServicesPage() {
     setFormData({
       name: '',
       description: '',
-      price: '',
-      quickbooks_service_id: ''
+      price: ''
     })
     setEditingService(null)
     setShowForm(false)
@@ -274,19 +270,6 @@ export default function ServicesPage() {
                   rows={3}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  QuickBooks Service ID
-                </label>
-                <Input
-                  value={formData.quickbooks_service_id}
-                  onChange={(e) => setFormData({ ...formData, quickbooks_service_id: e.target.value })}
-                  placeholder="Enter QuickBooks service ID (optional)"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Optional: Link this service to a QuickBooks item for automatic invoice creation
-                </p>
-              </div>
               <div className="flex justify-end space-x-4">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancel
@@ -335,11 +318,6 @@ export default function ServicesPage() {
               {service.description && (
                 <p className="text-sm text-gray-600 mb-2">
                   {service.description}
-                </p>
-              )}
-              {service.quickbooks_service_id && (
-                <p className="text-xs text-blue-600">
-                  QB ID: {service.quickbooks_service_id}
                 </p>
               )}
             </CardContent>
