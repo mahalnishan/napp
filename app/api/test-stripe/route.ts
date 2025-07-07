@@ -3,6 +3,14 @@ import { stripe, STRIPE_PLANS } from '@/lib/stripe'
 
 export async function GET(request: NextRequest) {
   try {
+    if (!stripe) {
+      return NextResponse.json({
+        success: false,
+        error: 'Stripe is not configured',
+        message: 'Stripe configuration issue detected'
+      }, { status: 500 })
+    }
+    
     // Test Stripe connection by listing customers
     const customers = await stripe.customers.list({ limit: 1 })
     

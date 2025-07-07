@@ -2,10 +2,12 @@ import Stripe from 'stripe'
 import { loadStripe } from '@stripe/stripe-js'
 
 // Server-side Stripe instance
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
-  typescript: true,
-})
+export const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-06-30.basil',
+      typescript: true,
+    })
+  : null
 
 // Client-side Stripe instance
 export const getStripe = () => {
@@ -50,6 +52,10 @@ export const STRIPE_PLANS = {
 
 // Create a Stripe customer
 export async function createStripeCustomer(email: string, name?: string) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     const customer = await stripe.customers.create({
       email,
@@ -79,6 +85,10 @@ export async function createCheckoutSession({
   successUrl: string
   cancelUrl: string
 }) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -112,6 +122,10 @@ export async function createCheckoutSession({
 
 // Create a billing portal session
 export async function createBillingPortalSession(customerId: string, returnUrl: string) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
@@ -126,6 +140,10 @@ export async function createBillingPortalSession(customerId: string, returnUrl: 
 
 // Get subscription details
 export async function getSubscription(subscriptionId: string) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
       expand: ['customer', 'latest_invoice']
@@ -139,6 +157,10 @@ export async function getSubscription(subscriptionId: string) {
 
 // Cancel subscription
 export async function cancelSubscription(subscriptionId: string) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true
@@ -152,6 +174,10 @@ export async function cancelSubscription(subscriptionId: string) {
 
 // Reactivate subscription
 export async function reactivateSubscription(subscriptionId: string) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false
@@ -165,6 +191,10 @@ export async function reactivateSubscription(subscriptionId: string) {
 
 // Update subscription
 export async function updateSubscription(subscriptionId: string, newPriceId: string) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     
@@ -187,6 +217,10 @@ export async function updateSubscription(subscriptionId: string, newPriceId: str
 
 // Verify webhook signature
 export function constructWebhookEvent(payload: string, signature: string, secret: string) {
+  if (!stripe) {
+    throw new Error('Stripe is not configured')
+  }
+  
   try {
     return stripe.webhooks.constructEvent(payload, signature, secret)
   } catch (error) {

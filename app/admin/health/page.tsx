@@ -51,6 +51,9 @@ import {
 } from 'recharts'
 import { useToast } from '@/components/ui/toast'
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic'
+
 interface SystemMetric {
   name: string
   value: number
