@@ -329,13 +329,13 @@ export default async function InfoPage({ params }: { params: Promise<{ slug: str
     <div className="max-w-3xl mx-auto py-16 px-4 sm:px-6 lg:px-8 space-y-12">
       <header className="text-center space-y-4">
         <h1 className="text-4xl font-extrabold tracking-tight">{page.title}</h1>
-        {page.subtitle && <p className="text-xl text-gray-600 dark:text-gray-400">{page.subtitle}</p>}
+                    {page.subtitle && <p className="text-xl text-gray-600">{page.subtitle}</p>}
       </header>
 
       {page.sections.map((sec) => (
         <section key={sec.heading} className="space-y-4">
           <h2 className="text-2xl font-bold">{sec.heading}</h2>
-          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{sec.body}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap">{sec.body}</p>
         </section>
       ))}
 

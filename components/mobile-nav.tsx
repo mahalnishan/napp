@@ -75,11 +75,11 @@ export function MobileNav() {
       {isOpen && (
         <div className="lg:hidden fixed inset-0 z-40">
           <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsOpen(false)} />
-          <div className="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-900 shadow-lg">
+          <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg">
             <div className="flex h-full flex-col">
               {/* Header */}
-              <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Effortless</h1>
+              <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
+                <h1 className="text-xl font-bold text-gray-900">Effortless</h1>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -99,7 +99,7 @@ export function MobileNav() {
                       key={item.name}
                       href={item.href}
                       onClick={() => setIsOpen(false)}
-                      className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white transition-colors"
+                      className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                     >
                       <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                       {item.name}
@@ -109,17 +109,17 @@ export function MobileNav() {
               </nav>
 
               {/* User section with Settings dropdown */}
-              <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="border-t border-gray-200 p-4">
                 {user && (
                   <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
+                                          <p className="text-sm font-medium text-gray-900">{user.email}</p>
                   </div>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                      className="w-full justify-start text-gray-600 hover:text-gray-900"
                     >
                       <Settings className="mr-3 h-5 w-5" />
                       Settings

@@ -71,14 +71,14 @@ export function Sidebar() {
   ]
 
   return (
-    <div className={`fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white border-r border-gray-200 dark:bg-gray-900 dark:border-gray-700 ${
+    <div className={`fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white border-r border-gray-200 ${
       collapsed ? 'w-16' : 'w-72'
     }`}>
       <div className="flex h-full flex-col">
         {/* Header */}
-        <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
           {!collapsed && (
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Effortless</h1>
+            <h1 className="text-xl font-bold text-gray-900">Effortless</h1>
           )}
           <Button
             variant="ghost"
@@ -102,7 +102,7 @@ export function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white transition-colors"
+                className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
               >
                 <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                 {!collapsed && item.name}
@@ -112,7 +112,7 @@ export function Sidebar() {
         </nav>
 
         {/* User section with Settings dropdown */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="border-t border-gray-200 p-4">
           {user && (
             <div className={`mb-4 ${collapsed ? 'flex justify-center' : ''}`}>
               {collapsed ? (
@@ -137,11 +137,11 @@ export function Sidebar() {
                     className="rounded-full"
                   />
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    <p className="text-sm font-medium text-gray-900">
                       {userProfile?.name || user.email}
                     </p>
                     {userProfile?.name && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500">
                         {user.email}
                       </p>
                     )}
@@ -160,7 +160,7 @@ export function Sidebar() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className={`w-full flex items-center justify-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white ${
+                className={`w-full flex items-center justify-center text-gray-600 hover:text-gray-900 ${
                   collapsed ? 'justify-center px-0' : 'justify-start'
                 }`}
               >

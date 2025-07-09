@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Edit, Trash2, Save, X, Settings, LinkIcon, Unlink, CheckCircle, AlertCircle, Building2, User, Key, Users, Bell, Shield, Upload, Download, Crown, Zap, Database, Palette, Globe, Code, MapPin, BarChart3, Webhook, XCircle, AlertTriangle, ArrowUpRight, CreditCard, FileText, Home, CreditCard as CreditCardIcon, Star, Shield as ShieldIcon, Link } from 'lucide-react'
 import { Worker } from '@/lib/types'
-import { ThemeToggle } from '@/components/theme-toggle'
+
 import { BulkEditModal } from '@/components/bulk-edit-modal'
 import QuickBooksIntegration from '@/components/quickbooks-integration'
 import { subscriptionClientService } from '@/lib/subscription-client'
@@ -742,11 +742,7 @@ export default function SettingsPage() {
                   {uploading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </form>
-              <Separator className="my-6" />
-              <div>
-                <label className="block text-sm font-medium mb-3">Theme</label>
-                <ThemeToggle />
-              </div>
+
             </CardContent>
           </Card>
         </TabsContent>

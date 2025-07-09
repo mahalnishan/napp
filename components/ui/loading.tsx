@@ -35,7 +35,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className, children, ...prop
   return (
     <div
       className={cn(
-        'animate-pulse rounded-md bg-gray-200 dark:bg-gray-700',
+        'animate-pulse rounded-md bg-gray-200',
         className
       )}
       {...props}

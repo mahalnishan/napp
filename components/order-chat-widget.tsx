@@ -73,11 +73,11 @@ export default function OrderChatWidget () {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 w-[28rem] sm:w-[32rem] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl flex flex-col h-[32rem]">
+        <div className="fixed bottom-6 right-6 w-[28rem] sm:w-[32rem] bg-white border border-gray-200 rounded-lg shadow-xl flex flex-col h-[32rem]">
           {/* Header */}
-          <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <span className="font-semibold text-gray-800 dark:text-gray-100">Order Assistant</span>
-            <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+              <span className="font-semibold text-gray-800">Order Assistant</span>
+              <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-700">
               ✕
             </button>
           </div>
@@ -87,7 +87,7 @@ export default function OrderChatWidget () {
             {messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`rounded-lg px-3 py-2 max-w-[80%] whitespace-pre-wrap ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100'}`}
+                  className={`rounded-lg px-3 py-2 max-w-[80%] whitespace-pre-wrap ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
                 >
                   {msg.content}
                 </div>
@@ -97,7 +97,7 @@ export default function OrderChatWidget () {
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t border-gray-200 dark:border-gray-800">
+          <div className="p-3 border-t border-gray-200">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -110,7 +110,7 @@ export default function OrderChatWidget () {
                     sendMessage()
                   }
                 }}
-                className="flex-1 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-gray-100"
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <Button size="icon" onClick={sendMessage} disabled={sending} aria-label="Send message">
                 <Send className="h-4 w-4" />
