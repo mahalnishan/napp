@@ -3,7 +3,7 @@
 import { useSupabaseQuery } from '@/lib/hooks/useOptimizedQuery'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, DollarSign, FileText, Users, Package, TrendingUp, Calendar, Clock, Shield } from 'lucide-react'
+import { Plus, DollarSign, FileText, Users, Package, TrendingUp, Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { DashboardStats, WorkOrderWithDetails } from '@/lib/types'
@@ -181,14 +181,6 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening with your work orders.</p>
         </div>
         <div className="flex items-center gap-2">
-          {userEmail === 'nishan.mahal71@gmail.com' && (
-            <Link href="/admin">
-              <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
-                <Shield className="mr-2 h-4 w-4" />
-                Admin Panel
-              </Button>
-            </Link>
-          )}
           <Link href="/dashboard/orders/new">
             <Button>
               <Plus className="mr-2 h-4 w-4" />

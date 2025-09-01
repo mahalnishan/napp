@@ -14,8 +14,7 @@ import {
   LogOut, 
   Menu,
   X,
-  BarChart3,
-  Shield
+  BarChart3
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -51,10 +50,6 @@ export function MobileNav() {
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Clients', href: '/dashboard/clients', icon: Users },
     { name: 'Services', href: '/dashboard/services', icon: Package },
-    // Show Admin Panel link only for the developer user
-    ...(user?.email === 'nishan.mahal71@gmail.com' ? [
-      { name: 'Admin Panel', href: '/admin', icon: Shield }
-    ] : []),
   ]
 
   return (

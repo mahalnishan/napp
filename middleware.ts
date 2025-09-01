@@ -5,7 +5,7 @@ import { checkDatabaseHealth, logDatabaseError } from './lib/supabase/database-u
 export async function middleware(request: NextRequest) {
   try {
     // Check database health for critical paths
-    const criticalPaths = ['/dashboard', '/admin', '/api/orders', '/api/clients']
+    const criticalPaths = ['/dashboard', '/api/orders', '/api/clients']
     const isCriticalPath = criticalPaths.some(path => request.nextUrl.pathname.startsWith(path))
     
     if (isCriticalPath) {
@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
         }
         
         // For pages, redirect to maintenance page or show error
-        if (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/admin')) {
+        if (request.nextUrl.pathname.startsWith('/dashboard')) {
           return NextResponse.redirect(new URL('/maintenance', request.url))
         }
       }
