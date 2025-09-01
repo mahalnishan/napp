@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { LogOut, Settings, Users, FileText, Package, Home, BarChart3, User, ChevronLeft, ChevronRight, Shield } from 'lucide-react'
+import { LogOut, Settings, Users, FileText, Package, Home, BarChart3, User, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { useSidebar } from '@/app/dashboard/layout'
 import { OptimizedImage } from '@/components/optimized-image'
@@ -64,10 +64,6 @@ export function Sidebar() {
     { name: 'Clients', href: '/dashboard/clients', icon: Users },
     { name: 'Services', href: '/dashboard/services', icon: Package },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-    // Show Admin Panel link only for the developer user
-    ...(user?.email === 'nishan.mahal71@gmail.com' ? [
-      { name: 'Admin Panel', href: '/admin', icon: Shield }
-    ] : []),
   ]
 
   return (
@@ -145,12 +141,7 @@ export function Sidebar() {
                         {user.email}
                       </p>
                     )}
-                    {user?.email === 'nishan.mahal71@gmail.com' && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Shield className="h-3 w-3 text-red-500" />
-                        <span className="text-xs text-red-600 font-medium">Admin</span>
-                      </div>
-                    )}
+                    {/* Admin badge removed */}
                   </div>
                 </div>
               )}
