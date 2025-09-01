@@ -33,12 +33,12 @@ CREATE TRIGGER sync_last_sign_in_at_trigger
 AFTER UPDATE OF last_sign_in_at ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.sync_last_sign_in_at();
 
--- 6. Update handle_new_user trigger function to include last_sign_in_at and role
+-- 6. Update handle_new_user trigger function to include last_sign_in_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id, email, role, last_sign_in_at, created_at, updated_at)
-  VALUES (NEW.id, NEW.email, 'user', NEW.last_sign_in_at, NOW(), NOW())
+  INSERT INTO public.users (id, email, last_sign_in_at, created_at, updated_at)
+  VALUES (NEW.id, NEW.email, NEW.last_sign_in_at, NOW(), NOW())
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
@@ -54,9 +54,7 @@ FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 -- 8. Grant permissions to authenticated role (if not already present)
 GRANT SELECT, INSERT, UPDATE ON public.users TO authenticated;
 
--- 9. Provide a permissive SELECT policy for now (admin will have role-specific policies)
--- This ensures that the Admin panel can read all users
--- NOTE: If an allow-all policy already exists, this will be ignored by Postgres
+-- 9. Provide a permissive SELECT policy for now (keep simple user access)
 DO $$
 BEGIN
     IF NOT EXISTS (
