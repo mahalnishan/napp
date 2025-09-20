@@ -9,28 +9,23 @@ import {
   Users, 
   FileText, 
   Wrench,
-  Activity,
-  Database,
-  Zap,
-  Server,
   DollarSign,
   Clock,
   Shield,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from 'lucide-react'
 
 interface SystemStats {
   totalUsers: number
   totalOrders: number
   totalRevenue: number
-  activeSubscriptions: number
   totalClients: number
   totalServices: number
 }
 
 interface RecentActivity {
   id: string
-  type: string
   description: string
   timestamp: string
   user_email?: string
@@ -41,12 +36,12 @@ export default function AdminDashboard() {
     totalUsers: 0,
     totalOrders: 0,
     totalRevenue: 0,
-    activeSubscriptions: 0,
     totalClients: 0,
     totalServices: 0
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchAdminData()
@@ -54,64 +49,75 @@ export default function AdminDashboard() {
 
   const fetchAdminData = async () => {
     try {
+      setRefreshing(true)
       const supabase = createClient()
       
-      // Fetch system statistics with proper error handling
-      const [
-        { count: usersCount },
-        { count: ordersCount },
-        { count: subscriptionsCount },
-        { count: clientsCount },
-        { count: servicesCount },
-        { data: ordersData },
-        { data: recentOrdersData }
-      ] = await Promise.all([
-        supabase.from('users').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
-        supabase.from('work_orders').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
-        supabase.from('subscriptions').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
-        supabase.from('clients').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
-        supabase.from('services').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
-        supabase.from('work_orders').select('order_amount').then(res => ({ data: res.data || [] })),
-        supabase.from('work_orders').select('*, user:users(email)').order('created_at', { ascending: false }).limit(5).then(res => ({ data: res.data || [] }))
-      ])
+      // Simple, reliable data fetching
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, email, created_at')
+        .order('created_at', { ascending: false })
 
-      // Calculate revenue from actual order data
-      const revenue = ordersData?.reduce((acc, order) => acc + (order.order_amount || 0), 0) || 0
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('work_orders')
+        .select('id, title, order_amount, created_at, user:users(email)')
+        .order('created_at', { ascending: false })
+
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, name, created_at')
+        .order('created_at', { ascending: false })
+
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('id, name, created_at')
+        .order('created_at', { ascending: false })
+
+      // Handle errors gracefully
+      if (usersError) console.error('Users error:', usersError.message)
+      if (ordersError) console.error('Orders error:', ordersError.message)
+      if (clientsError) console.error('Clients error:', clientsError.message)
+      if (servicesError) console.error('Services error:', servicesError.message)
+
+      // Calculate stats from actual data
+      const totalUsers = usersData?.length || 0
+      const totalOrders = ordersData?.length || 0
+      const totalClients = clientsData?.length || 0
+      const totalServices = servicesData?.length || 0
+      const totalRevenue = ordersData?.reduce((sum, order) => sum + (order.order_amount || 0), 0) || 0
 
       setStats({
-        totalUsers: usersCount || 0,
-        totalOrders: ordersCount || 0,
-        totalRevenue: revenue,
-        activeSubscriptions: subscriptionsCount || 0,
-        totalClients: clientsCount || 0,
-        totalServices: servicesCount || 0
+        totalUsers,
+        totalOrders,
+        totalRevenue,
+        totalClients,
+        totalServices
       })
 
-      // Process recent activity from actual data
-      const processedRecentActivity = recentOrdersData?.map((order, index) => ({
+      // Recent activity from recent orders
+      const recentOrders = ordersData?.slice(0, 5) || []
+      const processedActivity = recentOrders.map(order => ({
         id: order.id,
-        type: 'order_created',
-        description: `New order created: ${order.title || 'Untitled Order'}`,
+        description: `Order: ${order.title || 'Untitled'}`,
         timestamp: order.created_at,
         user_email: order.user?.email
-      })) || []
+      }))
 
-      setRecentActivity(processedRecentActivity)
+      setRecentActivity(processedActivity)
 
     } catch (error) {
       console.error('Error fetching admin data:', error)
-      // Set default values on error
       setStats({
         totalUsers: 0,
         totalOrders: 0,
         totalRevenue: 0,
-        activeSubscriptions: 0,
         totalClients: 0,
         totalServices: 0
       })
       setRecentActivity([])
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -138,8 +144,8 @@ export default function AdminDashboard() {
             <p className="text-muted-foreground">System overview and management</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          {[...Array(5)].map((_, i) => (
             <Card key={i}>
               <CardHeader className="animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -161,28 +167,29 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">System overview and management</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline">
-            <Activity className="h-3 w-3 mr-1" />
-            System Active
-          </Badge>
-          <Button variant="outline" size="sm">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            View Reports
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={fetchAdminData}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.totalUsers}</div>
             <p className="text-xs text-muted-foreground">
-              +12% from last month
+              Registered users
             </p>
           </CardContent>
         </Card>
@@ -193,9 +200,9 @@ export default function AdminDashboard() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.totalOrders}</div>
             <p className="text-xs text-muted-foreground">
-              +8% from last month
+              Work orders created
             </p>
           </CardContent>
         </Card>
@@ -208,7 +215,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              +23% from last month
+              From all orders
             </p>
           </CardContent>
         </Card>
@@ -221,7 +228,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalClients}</div>
             <p className="text-xs text-muted-foreground">
-              All clients in system
+              Client accounts
             </p>
           </CardContent>
         </Card>
@@ -234,7 +241,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalServices}</div>
             <p className="text-xs text-muted-foreground">
-              All services available
+              Available services
             </p>
           </CardContent>
         </Card>

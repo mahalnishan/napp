@@ -9,16 +9,11 @@ import { Input } from '@/components/ui/input'
 import { 
   Users, 
   Search, 
-  Filter, 
   MoreHorizontal,
   Eye,
   Edit,
   Trash2,
-  Mail,
-  Calendar,
-  Shield,
-  UserCheck,
-  UserX
+  Calendar
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -27,7 +22,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { OptimizedImage } from '@/components/optimized-image'
 
 interface User {
   id: string
@@ -67,19 +61,10 @@ export default function AdminUsersPage() {
     try {
       const supabase = createClient()
       
-      // Fetch users with their profiles
+      // Simple user fetch with basic info
       const { data: usersData, error } = await supabase
         .from('users')
-        .select(`
-          id,
-          email,
-          name,
-          phone,
-          avatar_url,
-          created_at,
-          last_sign_in_at,
-          role
-        `)
+        .select('id, email, name, created_at, role')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -93,14 +78,14 @@ export default function AdminUsersPage() {
         return
       }
 
-      // Add default subscription and usage data
+      // Add simple defaults
       const usersWithDefaults = usersData.map(user => ({
         ...user,
+        phone: null,
+        avatar_url: null,
+        last_sign_in_at: null,
         subscription: { plan_type: 'free', status: 'active' },
-        usage: {
-          workOrders: 0,
-          teamMembers: 0
-        }
+        usage: { workOrders: 0, teamMembers: 0 }
       }))
 
       setUsers(usersWithDefaults)
@@ -131,23 +116,6 @@ export default function AdminUsersPage() {
     setFilteredUsers(filtered)
   }
 
-  const getPlanColor = (plan: string) => {
-    switch (plan) {
-      case 'enterprise': return 'text-purple-600 bg-purple-100'
-      case 'professional': return 'text-blue-600 bg-blue-100'
-      case 'free': return 'text-gray-600 bg-gray-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600 bg-green-100'
-      case 'inactive': return 'text-red-600 bg-red-100'
-      case 'suspended': return 'text-yellow-600 bg-yellow-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -259,100 +227,58 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {/* Users Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Users List */}
+      <div className="space-y-4">
         {filteredUsers.map((user) => (
-          <Card key={user.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <OptimizedImage
-                    src={user.avatar_url}
-                    alt={user.name || user.email}
-                    width={48}
-                    height={48}
-                    className="rounded-full"
-                  />
+          <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-lg font-semibold text-blue-600">
+                      {(user.name || user.email).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                   <div>
                     <h3 className="font-semibold text-lg">
                       {user.name || 'No Name'}
                     </h3>
                     <p className="text-sm text-gray-600">{user.email}</p>
+                    <p className="text-xs text-gray-500">
+                      Joined {formatDate(user.created_at)}
+                    </p>
                   </div>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit User
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {user.subscription?.status === 'active' ? (
-                      <DropdownMenuItem onClick={() => handleUserAction(user.id, 'suspend')}>
-                        <UserX className="mr-2 h-4 w-4" />
-                        Suspend User
+                <div className="flex items-center gap-3">
+                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                    {user.role || 'user'}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
                       </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={() => handleUserAction(user.id, 'activate')}>
-                        <UserCheck className="mr-2 h-4 w-4" />
-                        Activate User
+                      <DropdownMenuItem>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit User
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem 
-                      onClick={() => handleUserAction(user.id, 'delete')}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete User
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Plan & Status */}
-              <div className="flex items-center justify-between">
-                <Badge className={getPlanColor(user.subscription?.plan_type || 'free')}>
-                  {user.subscription?.plan_type || 'free'}
-                </Badge>
-                <Badge className={getStatusColor(user.subscription?.status || 'active')}>
-                  {user.subscription?.status || 'active'}
-                </Badge>
-              </div>
-
-              {/* Usage Stats */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="text-center p-2 bg-gray-50 rounded">
-                  <div className="font-semibold">{user.usage?.workOrders || 0}</div>
-                  <div className="text-xs text-gray-600">Orders</div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => handleUserAction(user.id, 'delete')}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete User
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="text-center p-2 bg-gray-50 rounded">
-                  <div className="font-semibold">{user.usage?.teamMembers || 0}</div>
-                  <div className="text-xs text-gray-600">Team</div>
-                </div>
-              </div>
-
-              {/* User Info */}
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Calendar className="h-3 w-3" />
-                  <span>Joined {formatDate(user.created_at)}</span>
-                </div>
-                {user.last_sign_in_at && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail className="h-3 w-3" />
-                    <span>Last active {formatDate(user.last_sign_in_at)}</span>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
