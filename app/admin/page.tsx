@@ -60,7 +60,13 @@ export default function AdminDashboard() {
 
       const { data: ordersData, error: ordersError } = await supabase
         .from('work_orders')
-        .select('id, title, order_amount, created_at, user:users(email)')
+        .select(`
+          id, 
+          title, 
+          order_amount, 
+          created_at,
+          user:users(email)
+        `)
         .order('created_at', { ascending: false })
 
       const { data: clientsData, error: clientsError } = await supabase
@@ -100,7 +106,7 @@ export default function AdminDashboard() {
         id: order.id,
         description: `Order: ${order.title || 'Untitled'}`,
         timestamp: order.created_at,
-        user_email: order.user?.email
+        user_email: (order.user as any)?.email
       }))
 
       setRecentActivity(processedActivity)

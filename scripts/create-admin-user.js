@@ -6,10 +6,27 @@
  */
 
 const { createClient } = require('@supabase/supabase-js')
-require('dotenv').config()
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Read environment variables from .env.local
+const fs = require('fs')
+const path = require('path')
+
+const envPath = path.join(__dirname, '../.env.local')
+let supabaseUrl, supabaseServiceKey
+
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8')
+  const envLines = envContent.split('\n')
+  
+  for (const line of envLines) {
+    if (line.startsWith('NEXT_PUBLIC_SUPABASE_URL=')) {
+      supabaseUrl = line.split('=')[1]
+    }
+    if (line.startsWith('SUPABASE_SERVICE_ROLE_KEY=')) {
+      supabaseServiceKey = line.split('=')[1]
+    }
+  }
+}
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing required environment variables:')

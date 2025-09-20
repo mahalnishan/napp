@@ -50,7 +50,13 @@ export default function AdminAnalyticsPage() {
 
       const { data: ordersData, error: ordersError } = await supabase
         .from('work_orders')
-        .select('id, title, order_amount, created_at, user:users(email)')
+        .select(`
+          id, 
+          title, 
+          order_amount, 
+          created_at,
+          user:users(email)
+        `)
         .order('created_at', { ascending: false })
 
       const { data: clientsData, error: clientsError } = await supabase
@@ -80,7 +86,7 @@ export default function AdminAnalyticsPage() {
         title: order.title || 'Untitled Order',
         amount: order.order_amount || 0,
         created_at: order.created_at,
-        user_email: order.user?.email
+        user_email: (order.user as any)?.email
       })) || []
 
       setAnalytics({
