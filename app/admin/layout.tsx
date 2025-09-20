@@ -97,6 +97,8 @@ export default function AdminLayout({
           collapsed ? 'ml-16' : 'ml-72'
         }`}>
           <main className="p-3 sm:p-4 lg:p-6">
+            {/* Mobile spacing for hamburger menu */}
+            <div className="lg:hidden h-16"></div>
             {children}
           </main>
         </div>

@@ -78,7 +78,7 @@ export function AdminMobileNav() {
           variant="ghost"
           size="sm"
           onClick={() => setIsOpen(!isOpen)}
-          className="h-12 w-12 p-0 bg-gray-900/90 backdrop-blur-sm text-white hover:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-200"
+          className="h-12 w-12 p-0 bg-gray-900/95 backdrop-blur-sm text-white hover:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
           aria-label={isOpen ? 'Close menu' : 'Open menu'}
         >
           <div className="relative w-6 h-6">

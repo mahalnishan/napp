@@ -79,6 +79,8 @@ export default function DashboardLayout({
         }`}>
           <main className="py-4 sm:py-6 lg:py-10">
             <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
+              {/* Mobile spacing for hamburger menu */}
+              <div className="lg:hidden h-16"></div>
               {children}
             </div>
           </main>

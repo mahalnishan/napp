@@ -755,13 +755,24 @@ export default function OrdersPage() {
               <div className="block lg:hidden">
                 <div className="space-y-3 p-4">
                   {filteredOrders.map((order) => (
-                    <div key={order.id} className={`border rounded-lg p-4 space-y-3 ${selectedOrders.has(order.id) ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
+                    <div 
+                      key={order.id} 
+                      className={`border rounded-lg p-4 space-y-3 cursor-pointer hover:shadow-md transition-all duration-200 ${selectedOrders.has(order.id) ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 hover:border-gray-300'}`}
+                      onClick={(e) => {
+                        // Don't navigate if clicking on checkbox or action buttons
+                        if ((e.target as Element)?.closest('button')) return
+                        window.location.href = `/dashboard/orders/${order.id}`
+                      }}
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleSelectOrder(order.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSelectOrder(order.id)
+                            }}
                             className="h-6 w-6 p-0"
                             aria-label={selectedOrders.has(order.id) ? `Deselect order ${order.id}` : `Select order ${order.id}`}
                           >
@@ -826,13 +837,21 @@ export default function OrdersPage() {
                       
                       <div className="flex items-center justify-end space-x-2 pt-2 border-t border-gray-100">
                         <Link href={`/dashboard/orders/${order.id}`}>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
                         </Link>
                         <Link href={`/dashboard/orders/${order.id}/edit`}>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
@@ -840,7 +859,10 @@ export default function OrdersPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(order.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(order.id)
+                          }}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -948,12 +970,23 @@ export default function OrdersPage() {
                 </thead>
                 <tbody>
                   {filteredOrders.map((order) => (
-                    <tr key={order.id} className={`border-b hover:bg-muted/30 ${selectedOrders.has(order.id) ? 'bg-blue-50' : ''}`}>
+                    <tr 
+                      key={order.id} 
+                      className={`border-b hover:bg-muted/30 cursor-pointer ${selectedOrders.has(order.id) ? 'bg-blue-50' : ''}`}
+                      onClick={(e) => {
+                        // Don't navigate if clicking on checkbox or action buttons
+                        if ((e.target as Element)?.closest('button')) return
+                        window.location.href = `/dashboard/orders/${order.id}`
+                      }}
+                    >
                       <td className="p-3">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleSelectOrder(order.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSelectOrder(order.id)
+                          }}
                           className="h-6 w-6 p-0"
                           aria-label={selectedOrders.has(order.id) ? `Deselect order ${order.id}` : `Select order ${order.id}`}
                         >
@@ -1011,6 +1044,7 @@ export default function OrdersPage() {
                               variant="outline" 
                               className="h-7 w-7 p-0"
                               aria-label={`View order ${order.id}`}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -1021,6 +1055,7 @@ export default function OrdersPage() {
                               variant="outline" 
                               className="h-7 w-7 p-0"
                               aria-label={`Edit order ${order.id}`}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -1029,7 +1064,10 @@ export default function OrdersPage() {
                             size="sm" 
                             variant="outline" 
                             className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleDelete(order.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(order.id)
+                            }}
                             aria-label={`Delete order ${order.id}`}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1138,12 +1176,16 @@ export default function OrdersPage() {
                                       {orders.map((order) => (
                                         <div
                                           key={order.id}
-                                          className={`p-3 rounded-lg border ${
+                                          className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition-all duration-200 ${
                                             selectedOrders.has(order.id) 
                                               ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200' 
                                               : 'bg-white border-gray-200 hover:border-gray-300'
                                           }`}
-                                          onClick={() => handleSelectOrder(order.id)}
+                                          onClick={(e) => {
+                                            // Don't navigate if clicking on checkbox
+                                            if ((e.target as Element)?.closest('button')) return
+                                            window.location.href = `/dashboard/orders/${order.id}`
+                                          }}
                                         >
                                           <div className="flex items-start justify-between mb-2">
                                             <div className="flex-1 min-w-0">
@@ -1261,7 +1303,11 @@ export default function OrdersPage() {
                                             ? 'ring-2 ring-blue-500 bg-blue-100' 
                                             : 'bg-white border border-gray-200 hover:border-gray-300'
                                         }`}
-                                        onClick={() => handleSelectOrder(order.id)}
+                                        onClick={(e) => {
+                                          // Don't navigate if clicking on checkbox or action buttons
+                                          if ((e.target as Element)?.closest('button')) return
+                                          window.location.href = `/dashboard/orders/${order.id}`
+                                        }}
                                       >
                                         <div className="flex items-start justify-between mb-2">
                                           <div className="flex-1 min-w-0">
