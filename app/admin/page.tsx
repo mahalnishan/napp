@@ -8,17 +8,12 @@ import { Button } from '@/components/ui/button'
 import { 
   Users, 
   FileText, 
-  CreditCard, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle, 
+  Wrench,
   Activity,
   Database,
   Zap,
   Server,
-  Globe,
   DollarSign,
-  Calendar,
   Clock,
   Shield,
   BarChart3
@@ -29,19 +24,16 @@ interface SystemStats {
   totalOrders: number
   totalRevenue: number
   activeSubscriptions: number
-  systemHealth: 'healthy' | 'warning' | 'error'
-  databaseConnections: number
-  apiRequests: number
-  errorRate: number
-  uptime: number
+  totalClients: number
+  totalServices: number
 }
 
 interface RecentActivity {
   id: string
-  type: 'user_signup' | 'order_created' | 'payment_received' | 'system_error'
+  type: string
   description: string
   timestamp: string
-  severity: 'low' | 'medium' | 'high'
+  user_email?: string
 }
 
 export default function AdminDashboard() {
@@ -50,11 +42,8 @@ export default function AdminDashboard() {
     totalOrders: 0,
     totalRevenue: 0,
     activeSubscriptions: 0,
-    systemHealth: 'healthy',
-    databaseConnections: 0,
-    apiRequests: 0,
-    errorRate: 0,
-    uptime: 99.9
+    totalClients: 0,
+    totalServices: 0
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,63 +61,42 @@ export default function AdminDashboard() {
         { count: usersCount },
         { count: ordersCount },
         { count: subscriptionsCount },
-        { data: revenueData }
+        { count: clientsCount },
+        { count: servicesCount },
+        { data: ordersData },
+        { data: recentOrdersData }
       ] = await Promise.all([
         supabase.from('users').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
         supabase.from('work_orders').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
         supabase.from('subscriptions').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
-        supabase.from('subscriptions').select('plan_type').then(res => ({ data: res.data || [] }))
+        supabase.from('clients').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
+        supabase.from('services').select('*', { count: 'exact', head: true }).then(res => ({ count: res.count || 0 })),
+        supabase.from('work_orders').select('order_amount').then(res => ({ data: res.data || [] })),
+        supabase.from('work_orders').select('*, user:users(email)').order('created_at', { ascending: false }).limit(5).then(res => ({ data: res.data || [] }))
       ])
 
-      // Calculate revenue (mock calculation for now)
-      const revenue = revenueData?.reduce((acc, sub) => {
-        const planPrice = sub.plan_type === 'professional' ? 24 : sub.plan_type === 'enterprise' ? 59 : 0
-        return acc + planPrice
-      }, 0) || 0
+      // Calculate revenue from actual order data
+      const revenue = ordersData?.reduce((acc, order) => acc + (order.order_amount || 0), 0) || 0
 
       setStats({
         totalUsers: usersCount || 0,
         totalOrders: ordersCount || 0,
         totalRevenue: revenue,
         activeSubscriptions: subscriptionsCount || 0,
-        systemHealth: 'healthy',
-        databaseConnections: Math.floor(Math.random() * 50) + 10,
-        apiRequests: Math.floor(Math.random() * 1000) + 500,
-        errorRate: Math.random() * 2,
-        uptime: 99.9
+        totalClients: clientsCount || 0,
+        totalServices: servicesCount || 0
       })
 
-      // Mock recent activity
-      setRecentActivity([
-        {
-          id: '1',
-          type: 'user_signup',
-          description: 'New user registered: john.doe@example.com',
-          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          severity: 'low'
-        },
-        {
-          id: '2',
-          type: 'order_created',
-          description: 'New order created: #ORD-2024-001',
-          timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-          severity: 'low'
-        },
-        {
-          id: '3',
-          type: 'payment_received',
-          description: 'Payment received: $24.00 for Professional plan',
-          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          severity: 'low'
-        },
-        {
-          id: '4',
-          type: 'system_error',
-          description: 'API rate limit exceeded for user ID: 12345',
-          timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-          severity: 'medium'
-        }
-      ])
+      // Process recent activity from actual data
+      const processedRecentActivity = recentOrdersData?.map((order, index) => ({
+        id: order.id,
+        type: 'order_created',
+        description: `New order created: ${order.title || 'Untitled Order'}`,
+        timestamp: order.created_at,
+        user_email: order.user?.email
+      })) || []
+
+      setRecentActivity(processedRecentActivity)
 
     } catch (error) {
       console.error('Error fetching admin data:', error)
@@ -138,11 +106,8 @@ export default function AdminDashboard() {
         totalOrders: 0,
         totalRevenue: 0,
         activeSubscriptions: 0,
-        systemHealth: 'error',
-        databaseConnections: 0,
-        apiRequests: 0,
-        errorRate: 0,
-        uptime: 0
+        totalClients: 0,
+        totalServices: 0
       })
       setRecentActivity([])
     } finally {
@@ -150,23 +115,6 @@ export default function AdminDashboard() {
     }
   }
 
-  const getHealthColor = (health: string) => {
-    switch (health) {
-      case 'healthy': return 'text-green-600 bg-green-100'
-      case 'warning': return 'text-yellow-600 bg-yellow-100'
-      case 'error': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'low': return 'text-green-600 bg-green-100'
-      case 'medium': return 'text-yellow-600 bg-yellow-100'
-      case 'high': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -213,9 +161,9 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">System overview and management</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className={getHealthColor(stats.systemHealth)}>
+          <Badge variant="outline">
             <Activity className="h-3 w-3 mr-1" />
-            System {stats.systemHealth}
+            System Active
           </Badge>
           <Button variant="outline" size="sm">
             <BarChart3 className="h-4 w-4 mr-2" />
@@ -267,79 +215,64 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
+            <div className="text-2xl font-bold">{stats.totalClients}</div>
             <p className="text-xs text-muted-foreground">
-              +5% from last month
+              All clients in system
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Services</CardTitle>
+            <Wrench className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalServices}</div>
+            <p className="text-xs text-muted-foreground">
+              All services available
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* System Health & Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              System Health
-            </CardTitle>
-            <CardDescription>Real-time system performance metrics</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{stats.uptime}%</div>
-                <div className="text-sm text-gray-600">Uptime</div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{stats.databaseConnections}</div>
-                <div className="text-sm text-gray-600">DB Connections</div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{stats.apiRequests}</div>
-                <div className="text-sm text-gray-600">API Requests/min</div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">{stats.errorRate.toFixed(2)}%</div>
-                <div className="text-sm text-gray-600">Error Rate</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>Latest system events and user actions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentActivity.map((activity) => (
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Recent Activity
+          </CardTitle>
+          <CardDescription>Latest system events and user actions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity) => (
                 <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.severity === 'high' ? 'bg-red-500' : 
-                    activity.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                  }`} />
+                  <div className="w-2 h-2 rounded-full mt-2 bg-blue-500" />
                   <div className="flex-1">
                     <p className="text-sm font-medium">{activity.description}</p>
-                    <p className="text-xs text-gray-500">{formatTimestamp(activity.timestamp)}</p>
+                    <p className="text-xs text-gray-500">
+                      {activity.user_email && `${activity.user_email} • `}
+                      {formatTimestamp(activity.timestamp)}
+                    </p>
                   </div>
-                  <Badge className={getSeverityColor(activity.severity)}>
-                    {activity.severity}
-                  </Badge>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p>No recent activity</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>
@@ -352,21 +285,21 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex-col">
+            <Button variant="outline" className="h-auto p-4 flex-col" onClick={() => window.location.href = '/admin/users'}>
               <Users className="h-6 w-6 mb-2" />
               <span>Manage Users</span>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex-col">
-              <Database className="h-6 w-6 mb-2" />
-              <span>Database</span>
+            <Button variant="outline" className="h-auto p-4 flex-col" onClick={() => window.location.href = '/admin/orders'}>
+              <FileText className="h-6 w-6 mb-2" />
+              <span>View Orders</span>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex-col">
-              <Zap className="h-6 w-6 mb-2" />
-              <span>API Keys</span>
+            <Button variant="outline" className="h-auto p-4 flex-col" onClick={() => window.location.href = '/admin/clients'}>
+              <Users className="h-6 w-6 mb-2" />
+              <span>Manage Clients</span>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex-col">
-              <Server className="h-6 w-6 mb-2" />
-              <span>System Logs</span>
+            <Button variant="outline" className="h-auto p-4 flex-col" onClick={() => window.location.href = '/admin/services'}>
+              <Wrench className="h-6 w-6 mb-2" />
+              <span>Manage Services</span>
             </Button>
           </div>
         </CardContent>

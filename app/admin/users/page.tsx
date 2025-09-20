@@ -65,110 +65,10 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      console.log('Starting to fetch users...')
-      
-      // Check environment variables first
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-      
-      console.log('Environment check:', {
-        hasUrl: !!supabaseUrl,
-        hasKey: !!supabaseAnonKey,
-        urlLength: supabaseUrl?.length,
-        keyLength: supabaseAnonKey?.length
-      })
-      
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Missing Supabase environment variables')
-      }
-      
       const supabase = createClient()
       
-      // First, check if user is authenticated
-      console.log('Checking authentication...')
-      const authResult = await supabase.auth.getUser()
-      console.log('Auth result:', authResult)
-      
-      const { data: { user }, error: authError } = authResult
-      console.log('Auth check:', { 
-        user: user?.id, 
-        userEmail: user?.email,
-        error: authError,
-        errorMessage: authError?.message,
-        errorCode: authError?.code
-      })
-      
-      if (authError) {
-        console.error('Authentication error:', authError)
-        setUsers([])
-        return
-      }
-      
-      if (!user) {
-        console.error('No authenticated user found')
-        setUsers([])
-        return
-      }
-      
-      // Check if user has admin role
-      console.log('Checking user profile...')
-      const profileResult = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      
-      console.log('Profile result:', profileResult)
-      
-      const { data: userProfile, error: profileError } = profileResult
-      console.log('User profile check:', { 
-        profile: userProfile, 
-        error: profileError,
-        errorMessage: profileError?.message,
-        errorCode: profileError?.code
-      })
-      
-      if (profileError) {
-        console.error('Profile fetch error:', profileError)
-      }
-      
-      if (userProfile?.role !== 'admin') {
-        console.warn('User does not have admin role:', userProfile?.role)
-        // For now, let's continue but log the warning
-      }
-      
-      // First, test basic connectivity with a simple query
-      console.log('Testing basic connectivity...')
-      const testResult = await supabase
-        .from('users')
-        .select('id')
-        .limit(1)
-      
-      console.log('Test query result:', testResult)
-      
-      const { data: testData, error: testError } = testResult
-      console.log('Test query details:', { 
-        testData, 
-        testError,
-        errorMessage: testError?.message,
-        errorCode: testError?.code,
-        errorDetails: testError?.details
-      })
-      
-      if (testError) {
-        console.error('Basic connectivity test failed:', testError)
-        console.error('Error object keys:', Object.keys(testError || {}))
-        console.error('Error object values:', Object.values(testError || {}))
-        // If basic query fails, it might be an RLS issue
-        // Let's try a different approach
-        setUsers([])
-        setLoading(false)
-        return
-      }
-      
       // Fetch users with their profiles
-      console.log('Fetching all users...')
-      const usersResult = await supabase
+      const { data: usersData, error } = await supabase
         .from('users')
         .select(`
           id,
@@ -182,41 +82,18 @@ export default function AdminUsersPage() {
         `)
         .order('created_at', { ascending: false })
 
-      console.log('Users query result:', usersResult)
-
-      const { data: usersData, error } = usersResult
-      console.log('Users query details:', { 
-        data: usersData, 
-        error,
-        errorMessage: error?.message,
-        errorCode: error?.code,
-        errorDetails: error?.details,
-        dataLength: usersData?.length
-      })
-
       if (error) {
-        console.error('Supabase error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          errorObject: error,
-          errorKeys: Object.keys(error || {}),
-          errorValues: Object.values(error || {})
-        })
-        throw error
-      }
-
-      if (!usersData) {
-        console.log('No users data returned, setting empty array')
+        console.error('Error fetching users:', error)
         setUsers([])
         return
       }
 
-      console.log(`Found ${usersData.length} users, processing subscriptions...`)
+      if (!usersData) {
+        setUsers([])
+        return
+      }
 
-      // For now, let's just return the basic user data without additional queries
-      // to avoid potential RLS issues with other tables
+      // Add default subscription and usage data
       const usersWithDefaults = usersData.map(user => ({
         ...user,
         subscription: { plan_type: 'free', status: 'active' },
@@ -226,19 +103,9 @@ export default function AdminUsersPage() {
         }
       }))
 
-      console.log('Successfully processed all users:', usersWithDefaults.length)
       setUsers(usersWithDefaults)
     } catch (error) {
       console.error('Error fetching users:', error)
-      console.error('Error type:', typeof error)
-      console.error('Error constructor:', error?.constructor?.name)
-      console.error('Error keys:', Object.keys(error || {}))
-      console.error('Error values:', Object.values(error || {}))
-      console.error('Error stringified:', JSON.stringify(error, null, 2))
-      console.error('Error message:', error instanceof Error ? error.message : String(error))
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-      
-      // Set empty array to prevent further errors
       setUsers([])
     } finally {
       setLoading(false)
