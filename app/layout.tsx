@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "@/components/ui/toaster";
-import OrderChatWidget from '@/components/order-chat-widget';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -143,7 +142,6 @@ export default function RootLayout({
         <ErrorBoundary>
           {children}
           <Toaster />
-          <OrderChatWidget />
         </ErrorBoundary>
       </body>
     </html>

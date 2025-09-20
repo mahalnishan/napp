@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Search, Save, X, Download, Calendar, DollarSign, User, CheckSquare, Square, List, Grid3X3, Clock, MapPin, Phone, Mail, RefreshCw } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, Save, X, Download, Calendar, DollarSign, User, CheckSquare, Square, List, Grid3X3, Clock, MapPin, Phone, Mail, RefreshCw, Eye } from 'lucide-react'
 import { WorkOrderWithDetails, Client, Service, Worker } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { BulkEditModal } from '@/components/bulk-edit-modal'
@@ -363,10 +363,11 @@ export default function OrdersPage() {
       : filteredOrders
 
     const csvContent = [
-      ['Client', 'Status', 'Total', 'Created Date'],
+      ['Client', 'Status', 'Payment Status', 'Total', 'Created Date'],
       ...ordersToExport.map(order => [
         order.client?.name || '',
         order.status,
+        order.order_payment_status,
         order.order_amount || 0,
         formatDate(order.created_at)
       ])
@@ -807,6 +808,20 @@ export default function OrdersPage() {
                     </th>
                     <th 
                       className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" 
+                      onClick={() => handleSort('order_payment_status')}
+                      tabIndex={0}
+                      aria-label={`Sort by payment status ${sortField === 'order_payment_status' ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSort('order_payment_status')
+                        }
+                      }}
+                    >
+                      Payment Status {sortField === 'order_payment_status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th 
+                      className="text-left p-3 text-sm font-medium cursor-pointer hover:bg-muted/50" 
                       onClick={() => handleSort('created_at')}
                       tabIndex={0}
                       aria-label={`Sort by creation date ${sortField === 'created_at' ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
@@ -865,6 +880,16 @@ export default function OrdersPage() {
                         </div>
                       </td>
                       <td className="p-3">
+                        <span className={`
+                          px-2 py-1 rounded-full text-xs font-medium
+                          ${order.order_payment_status === 'Paid' ? 'bg-green-100 text-green-800' : ''}
+                          ${order.order_payment_status === 'Pending Invoice' ? 'bg-yellow-100 text-yellow-800' : ''}
+                          ${order.order_payment_status === 'Unpaid' ? 'bg-red-100 text-red-800' : ''}
+                        `}>
+                          {order.order_payment_status}
+                        </span>
+                      </td>
+                      <td className="p-3">
                         <div className="text-xs text-muted-foreground">
                           {formatDate(order.created_at)}
                         </div>
@@ -875,52 +900,30 @@ export default function OrdersPage() {
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="h-7 px-2 text-xs"
+                              className="h-7 w-7 p-0"
                               aria-label={`View order ${order.id}`}
                             >
-                              View
+                              <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Link href={`/dashboard/orders/${order.id}/edit`}>
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="h-7 px-2 text-xs"
+                              className="h-7 w-7 p-0"
                               aria-label={`Edit order ${order.id}`}
                             >
-                              Edit
+                              <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
-                          {!order.quickbooks_invoice_id ? (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-7 px-2 text-xs text-green-600 hover:text-green-700"
-                              onClick={async () => {
-                                const res = await fetch(`/api/orders/${order.id}/invoice`, { method: 'POST' })
-                                const data = await res.json()
-                                if (res.ok) {
-                                  alert('Invoice sent!')
-                                  fetchOrders()
-                                } else {
-                                  alert(data.error || 'Error sending invoice')
-                                }
-                              }}
-                              aria-label={`Send invoice for order ${order.id}`}
-                            >
-                              Send Invoice
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-gray-500">Invoiced</span>
-                          )}
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => handleDelete(order.id)}
                             aria-label={`Delete order ${order.id}`}
                           >
-                            Delete
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -1080,21 +1083,25 @@ export default function OrdersPage() {
                                             <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
                                               {order.status}
                                             </span>
-                                            <span className={`px-2 py-1 rounded text-xs font-medium ${getPaymentColor(order.order_payment_status)}`}>
-                                              {order.order_payment_status}
-                                            </span>
                                           </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-xs text-gray-500">Payment Status:</span>
+                                          <span className={`px-2 py-1 rounded text-xs font-medium ${getPaymentColor(order.order_payment_status)}`}>
+                                            {order.order_payment_status}
+                                          </span>
                                         </div>
                                         
                                         {/* Quick actions */}
                                         <div className="flex space-x-1">
                                           <Link href={`/dashboard/orders/${order.id}`}>
-                                            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
-                                              View
+                                            <Button size="sm" variant="outline" className="h-6 w-6 p-0" aria-label={`View order ${order.id}`}>
+                                              <Eye className="h-3 w-3" />
                                             </Button>
                                           </Link>
                                           <Link href={`/dashboard/orders/${order.id}/edit`}>
-                                            <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                                            <Button size="sm" variant="outline" className="h-6 w-6 p-0" aria-label={`Edit order ${order.id}`}>
                                               <Edit className="h-3 w-3" />
                                             </Button>
                                           </Link>
@@ -1113,26 +1120,48 @@ export default function OrdersPage() {
                     {/* Legend */}
                     <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
                       <div className="text-sm font-medium text-gray-700 mb-2">Legend</div>
-                      <div className="flex flex-wrap gap-4 text-xs">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
-                          <span>Today</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <div className="font-medium text-gray-600 mb-2">Order Status</div>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
+                              <span>Today</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
+                              <span>Completed</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded"></div>
+                              <span>In Progress</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+                              <span>Pending</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+                              <span>Cancelled</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
-                          <span>Completed</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded"></div>
-                          <span>In Progress</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
-                          <span>Pending</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                          <span>Cancelled</span>
+                        <div>
+                          <div className="font-medium text-gray-600 mb-2">Payment Status</div>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
+                              <span>Paid</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+                              <span>Pending Invoice</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+                              <span>Unpaid</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
