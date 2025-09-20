@@ -583,18 +583,18 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Work Orders</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Work Orders</h1>
           <p className="text-sm text-muted-foreground">Manage and track your work orders</p>
         </div>
-        <div className="flex space-x-2">
-          <Button onClick={handleExport} variant="outline" size="sm">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={handleExport} variant="outline" size="sm" className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export {selectedOrders.size > 0 && `(${selectedOrders.size})`}
           </Button>
-          <Link href="/dashboard/orders/new">
-            <Button size="sm">
+          <Link href="/dashboard/orders/new" className="w-full sm:w-auto">
+            <Button size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               New Order
             </Button>
@@ -603,32 +603,36 @@ export default function OrdersPage() {
       </div>
 
       {/* View Mode Toggle */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('list')}
+            className="flex-1 sm:flex-none"
           >
             <List className="h-4 w-4 mr-2" />
-            List View
+            <span className="hidden xs:inline">List View</span>
+            <span className="xs:hidden">List</span>
           </Button>
           <Button
             variant={viewMode === 'schedule' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('schedule')}
+            className="flex-1 sm:flex-none"
           >
             <Grid3X3 className="h-4 w-4 mr-2" />
-            Schedule View
+            <span className="hidden xs:inline">Schedule View</span>
+            <span className="xs:hidden">Schedule</span>
           </Button>
         </div>
         
         {/* Schedule Filter (only show in schedule view) */}
         {viewMode === 'schedule' && (
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Show:</span>
+            <span className="text-sm text-muted-foreground hidden sm:inline">Show:</span>
             <Select value={scheduleFilter} onValueChange={(value: 'week' | 'month' | 'year') => setScheduleFilter(value)}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -706,28 +710,31 @@ export default function OrdersPage() {
       {selectedOrders.size > 0 && (
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <span className="text-sm font-medium">
                   {selectedOrders.size} order(s) selected
                 </span>
-                <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Select action..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="edit">Edit Selected</SelectItem>
-                    <SelectItem value="delete">Delete Selected</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleBulkAction} disabled={!bulkAction}>
-                  Apply
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Select value={bulkAction} onValueChange={setBulkAction}>
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue placeholder="Select action..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="edit">Edit Selected</SelectItem>
+                      <SelectItem value="delete">Delete Selected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleBulkAction} disabled={!bulkAction} className="w-full sm:w-auto">
+                    Apply
+                  </Button>
+                </div>
               </div>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setSelectedOrders(new Set())}
+                className="w-full sm:w-auto"
               >
                 Clear Selection
               </Button>
@@ -743,8 +750,110 @@ export default function OrdersPage() {
         </CardHeader>
         <CardContent className="p-0">
           {viewMode === 'list' ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <>
+              {/* Mobile Card View */}
+              <div className="block lg:hidden">
+                <div className="space-y-3 p-4">
+                  {filteredOrders.map((order) => (
+                    <div key={order.id} className={`border rounded-lg p-4 space-y-3 ${selectedOrders.has(order.id) ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSelectOrder(order.id)}
+                            className="h-6 w-6 p-0"
+                            aria-label={selectedOrders.has(order.id) ? `Deselect order ${order.id}` : `Select order ${order.id}`}
+                          >
+                            {selectedOrders.has(order.id) ? (
+                              <CheckSquare className="h-4 w-4" />
+                            ) : (
+                              <Square className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <div>
+                            <div className="font-medium text-sm">#{order.id.slice(0,8)}</div>
+                            <div className="text-xs text-muted-foreground">{formatDate(order.created_at)}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`
+                            px-2 py-1 rounded-full text-xs font-medium
+                            ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : ''}
+                            ${order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : ''}
+                            ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${order.status === 'Cancelled' ? 'bg-red-100 text-red-800' : ''}
+                            ${order.status === 'Archived' ? 'bg-gray-100 text-gray-800' : ''}
+                          `}>
+                            {order.status}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div>
+                          <div className="font-medium text-sm">{order.client?.name || 'Unknown'}</div>
+                          <div className="text-xs text-muted-foreground">{order.client?.email}</div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">
+                            {formatCurrency(order.order_amount || 0)}
+                          </div>
+                          <span className={`
+                            px-2 py-1 rounded-full text-xs font-medium
+                            ${order.order_payment_status === 'Paid' ? 'bg-green-100 text-green-800' : ''}
+                            ${order.order_payment_status === 'Pending Invoice' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${order.order_payment_status === 'Unpaid' ? 'bg-red-100 text-red-800' : ''}
+                          `}>
+                            {order.order_payment_status}
+                          </span>
+                        </div>
+                        
+                        {order.schedule_date_time && (
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {formatDate(order.schedule_date_time)}
+                          </div>
+                        )}
+                        
+                        {order.notes && (
+                          <div className="text-xs text-muted-foreground line-clamp-2">
+                            {order.notes}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-end space-x-2 pt-2 border-t border-gray-100">
+                        <Link href={`/dashboard/orders/${order.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                        </Link>
+                        <Link href={`/dashboard/orders/${order.id}/edit`}>
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(order.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
                 <thead>
                   <tr className="border-b bg-muted/30">
                     <th className="text-left p-3 text-sm font-medium">
@@ -936,7 +1045,8 @@ export default function OrdersPage() {
                   <p className="text-muted-foreground text-sm">No orders found</p>
                 </div>
               )}
-            </div>
+              </div>
+            </>
           ) : (
             /* Schedule View */
             <div className="p-4">
@@ -984,32 +1094,140 @@ export default function OrdersPage() {
                     {/* Schedule Grid */}
                     <div className="overflow-x-auto">
                       <div className="min-w-max">
-                        {/* Header Row with Dates */}
-                        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${scheduleDates.length}, 1fr)` }}>
-                          {/* Date column headers */}
-                          {scheduleDates.map((dateString) => (
-                            <div 
-                              key={dateString} 
-                              className={`h-16 flex flex-col items-center justify-center border rounded-lg text-center ${
-                                isToday(dateString) ? 'bg-blue-100 border-blue-300' : 'bg-gray-50'
-                              }`}
-                            >
-                              <div className={`text-sm font-medium ${
-                                isToday(dateString) ? 'text-blue-900' : 'text-gray-900'
-                              }`}>
-                                {formatScheduleDate(dateString)}
-                              </div>
-                              <div className={`text-xs ${
-                                isToday(dateString) ? 'text-blue-700' : 'text-gray-500'
-                              }`}>
-                                {getDayOfWeek(dateString)}
-                              </div>
-                            </div>
-                          ))}
+                        {/* Mobile Schedule View */}
+                        <div className="block lg:hidden">
+                          <div className="space-y-4">
+                            {scheduleDates.map((dateString) => {
+                              const orders = getOrdersForDate(dateString)
+                              return (
+                                <div key={dateString} className="border rounded-lg p-4">
+                                  <div className={`flex items-center justify-between mb-4 p-3 rounded-lg ${
+                                    isToday(dateString) ? 'bg-blue-100 border border-blue-200' : 'bg-gray-50'
+                                  }`}>
+                                    <div>
+                                      <div className={`text-lg font-semibold ${
+                                        isToday(dateString) ? 'text-blue-900' : 'text-gray-900'
+                                      }`}>
+                                        {formatScheduleDate(dateString)}
+                                      </div>
+                                      <div className={`text-sm ${
+                                        isToday(dateString) ? 'text-blue-700' : 'text-gray-500'
+                                      }`}>
+                                        {getDayOfWeek(dateString)}
+                                      </div>
+                                    </div>
+                                    <div className="text-sm font-medium text-gray-600">
+                                      {orders.length} order{orders.length !== 1 ? 's' : ''}
+                                    </div>
+                                  </div>
+                                  
+                                  {orders.length === 0 ? (
+                                    <div className="text-center py-8">
+                                      <div className="text-sm text-gray-400 mb-3">
+                                        {isToday(dateString) ? 'No orders for today' : 'No orders scheduled'}
+                                      </div>
+                                      <Link href="/dashboard/orders/new">
+                                        <Button size="sm" variant="outline">
+                                          <Plus className="h-4 w-4 mr-2" />
+                                          Add Order
+                                        </Button>
+                                      </Link>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      {orders.map((order) => (
+                                        <div
+                                          key={order.id}
+                                          className={`p-3 rounded-lg border ${
+                                            selectedOrders.has(order.id) 
+                                              ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200' 
+                                              : 'bg-white border-gray-200 hover:border-gray-300'
+                                          }`}
+                                          onClick={() => handleSelectOrder(order.id)}
+                                        >
+                                          <div className="flex items-start justify-between mb-2">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="font-medium text-gray-900 truncate">
+                                                {order.client?.name || 'Unknown'}
+                                              </div>
+                                              <div className="text-gray-600 text-sm">
+                                                {new Date(order.schedule_date_time).toLocaleTimeString('en-US', {
+                                                  hour: 'numeric',
+                                                  minute: '2-digit',
+                                                  hour12: true
+                                                })}
+                                              </div>
+                                            </div>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 w-6 p-0 ml-2 flex-shrink-0"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleSelectOrder(order.id)
+                                              }}
+                                            >
+                                              {selectedOrders.has(order.id) ? (
+                                                <CheckSquare className="h-4 w-4" />
+                                              ) : (
+                                                <Square className="h-4 w-4" />
+                                              )}
+                                            </Button>
+                                          </div>
+                                          
+                                          <div className="flex items-center justify-between mb-2">
+                                            <div className="text-sm font-medium text-gray-900">
+                                              {formatCurrency(order.order_amount || 0)}
+                                            </div>
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                                              {order.status}
+                                            </span>
+                                          </div>
+                                          
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-xs text-gray-500">Payment:</span>
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${getPaymentColor(order.order_payment_status)}`}>
+                                              {order.order_payment_status}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
                         </div>
 
-                        {/* Orders Rows */}
-                        <div className="grid gap-4 mt-4" style={{ gridTemplateColumns: `repeat(${scheduleDates.length}, 1fr)` }}>
+                        {/* Desktop Schedule View */}
+                        <div className="hidden lg:block">
+                          {/* Header Row with Dates */}
+                          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${scheduleDates.length}, 1fr)` }}>
+                            {/* Date column headers */}
+                            {scheduleDates.map((dateString) => (
+                              <div 
+                                key={dateString} 
+                                className={`h-16 flex flex-col items-center justify-center border rounded-lg text-center ${
+                                  isToday(dateString) ? 'bg-blue-100 border-blue-300' : 'bg-gray-50'
+                                }`}
+                              >
+                                <div className={`text-sm font-medium ${
+                                  isToday(dateString) ? 'text-blue-900' : 'text-gray-900'
+                                }`}>
+                                  {formatScheduleDate(dateString)}
+                                </div>
+                                <div className={`text-xs ${
+                                  isToday(dateString) ? 'text-blue-700' : 'text-gray-500'
+                                }`}>
+                                  {getDayOfWeek(dateString)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Orders Rows */}
+                          <div className="grid gap-4 mt-4" style={{ gridTemplateColumns: `repeat(${scheduleDates.length}, 1fr)` }}>
                           {/* Orders for each date */}
                           {scheduleDates.map((dateString) => {
                             const orders = getOrdersForDate(dateString)
@@ -1114,6 +1332,7 @@ export default function OrdersPage() {
                             )
                           })}
                         </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1187,16 +1406,17 @@ export default function OrdersPage() {
       {totalPages > 1 && (
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="text-sm text-muted-foreground text-center sm:text-left">
                 Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalOrders)} of {totalOrders} orders
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
+                  className="flex-1 sm:flex-none"
                 >
                   Previous
                 </Button>
@@ -1231,6 +1451,7 @@ export default function OrdersPage() {
                   size="sm"
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
+                  className="flex-1 sm:flex-none"
                 >
                   Next
                 </Button>

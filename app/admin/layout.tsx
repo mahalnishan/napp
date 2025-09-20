@@ -96,7 +96,7 @@ export default function AdminLayout({
         <div className={`transition-all duration-300 ${
           collapsed ? 'ml-16' : 'ml-72'
         }`}>
-          <main className="p-6">
+          <main className="p-3 sm:p-4 lg:p-6">
             {children}
           </main>
         </div>

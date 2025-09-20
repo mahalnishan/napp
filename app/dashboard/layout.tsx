@@ -77,8 +77,8 @@ export default function DashboardLayout({
         <div className={`transition-all duration-300 ${
           collapsed ? 'lg:pl-16' : 'lg:pl-72'
         }`}>
-          <main className="py-10">
-            <div className="px-4 sm:px-6 lg:px-8">
+          <main className="py-4 sm:py-6 lg:py-10">
+            <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
               {children}
             </div>
           </main>
