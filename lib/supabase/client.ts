@@ -15,7 +15,7 @@ export function createClient() {
     },
     global: {
       headers: {
-        'X-Client-Info': 'effortless-app',
+        'X-Client-Info': 'dotorder-app',
       },
     },
     db: {

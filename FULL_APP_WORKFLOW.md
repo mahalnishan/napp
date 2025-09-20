@@ -1,7 +1,7 @@
 # Full-Stack Work Order Management App - Complete Workflow
 
 ## Overview
-This workflow will guide you through building a complete work order management system similar to "Effortless" from scratch. The app will include client management, work orders, services, workers, authentication, and payment processing.
+This workflow will guide you through building a complete work order management system similar to "DotOrder.app" from scratch. The app will include client management, work orders, services, workers, authentication, and payment processing.
 
 ## Tech Stack
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript

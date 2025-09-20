@@ -69,30 +69,6 @@ export interface Database {
           address: string | null
           client_type: string
           is_active: boolean
-          quickbooks_customer_id: string | null
-          // New QuickBooks-aligned fields
-          display_name: string | null
-          company_name: string | null
-          given_name: string | null
-          family_name: string | null
-          fully_qualified_name: string | null
-          bill_addr_line1: string | null
-          bill_addr_city: string | null
-          bill_addr_state: string | null
-          bill_addr_postal_code: string | null
-          bill_addr_country: string | null
-          primary_phone_free_form_number: string | null
-          primary_email_address: string | null
-          notes: string | null
-          preferred_delivery_method: string | null
-          taxable: boolean | null
-          job: boolean | null
-          bill_with_parent: boolean | null
-          balance: number | null
-          open_balance_date: string | null
-          quickbooks_sync_token: string | null
-          quickbooks_meta_data: any | null
-          last_quickbooks_sync: string | null
           created_at: string
           updated_at: string
         }
@@ -105,30 +81,6 @@ export interface Database {
           address?: string | null
           client_type?: string
           is_active?: boolean
-          quickbooks_customer_id?: string | null
-          // New QuickBooks-aligned fields
-          display_name?: string | null
-          company_name?: string | null
-          given_name?: string | null
-          family_name?: string | null
-          fully_qualified_name?: string | null
-          bill_addr_line1?: string | null
-          bill_addr_city?: string | null
-          bill_addr_state?: string | null
-          bill_addr_postal_code?: string | null
-          bill_addr_country?: string | null
-          primary_phone_free_form_number?: string | null
-          primary_email_address?: string | null
-          notes?: string | null
-          preferred_delivery_method?: string | null
-          taxable?: boolean | null
-          job?: boolean | null
-          bill_with_parent?: boolean | null
-          balance?: number | null
-          open_balance_date?: string | null
-          quickbooks_sync_token?: string | null
-          quickbooks_meta_data?: any | null
-          last_quickbooks_sync?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -141,30 +93,6 @@ export interface Database {
           address?: string | null
           client_type?: string
           is_active?: boolean
-          quickbooks_customer_id?: string | null
-          // New QuickBooks-aligned fields
-          display_name?: string | null
-          company_name?: string | null
-          given_name?: string | null
-          family_name?: string | null
-          fully_qualified_name?: string | null
-          bill_addr_line1?: string | null
-          bill_addr_city?: string | null
-          bill_addr_state?: string | null
-          bill_addr_postal_code?: string | null
-          bill_addr_country?: string | null
-          primary_phone_free_form_number?: string | null
-          primary_email_address?: string | null
-          notes?: string | null
-          preferred_delivery_method?: string | null
-          taxable?: boolean | null
-          job?: boolean | null
-          bill_with_parent?: boolean | null
-          balance?: number | null
-          open_balance_date?: string | null
-          quickbooks_sync_token?: string | null
-          quickbooks_meta_data?: any | null
-          last_quickbooks_sync?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -176,23 +104,6 @@ export interface Database {
           name: string
           description: string | null
           price: number
-          quickbooks_service_id: string | null
-          // New QuickBooks-aligned fields
-          qb_type: string | null
-          qb_income_account_ref: string | null
-          qb_expense_account_ref: string | null
-          qb_asset_account_ref: string | null
-          qb_sku: string | null
-          qb_track_qty_on_hand: boolean | null
-          qb_qty_on_hand: number | null
-          qb_reorder_point: number | null
-          qb_taxable: boolean | null
-          qb_sales_tax_included: boolean | null
-          qb_purchase_tax_included: boolean | null
-          qb_purchase_cost: number | null
-          qb_sync_token: string | null
-          qb_meta_data: any | null
-          last_quickbooks_sync: string | null
           created_at: string
           updated_at: string
         }
@@ -202,23 +113,6 @@ export interface Database {
           name: string
           description?: string | null
           price: number
-          quickbooks_service_id?: string | null
-          // New QuickBooks-aligned fields
-          qb_type?: string | null
-          qb_income_account_ref?: string | null
-          qb_expense_account_ref?: string | null
-          qb_asset_account_ref?: string | null
-          qb_sku?: string | null
-          qb_track_qty_on_hand?: boolean | null
-          qb_qty_on_hand?: number | null
-          qb_reorder_point?: number | null
-          qb_taxable?: boolean | null
-          qb_sales_tax_included?: boolean | null
-          qb_purchase_tax_included?: boolean | null
-          qb_purchase_cost?: number | null
-          qb_sync_token?: string | null
-          qb_meta_data?: any | null
-          last_quickbooks_sync?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -228,23 +122,6 @@ export interface Database {
           name?: string
           description?: string | null
           price?: number
-          quickbooks_service_id?: string | null
-          // New QuickBooks-aligned fields
-          qb_type?: string | null
-          qb_income_account_ref?: string | null
-          qb_expense_account_ref?: string | null
-          qb_asset_account_ref?: string | null
-          qb_sku?: string | null
-          qb_track_qty_on_hand?: boolean | null
-          qb_qty_on_hand?: number | null
-          qb_reorder_point?: number | null
-          qb_taxable?: boolean | null
-          qb_sales_tax_included?: boolean | null
-          qb_purchase_tax_included?: boolean | null
-          qb_purchase_cost?: number | null
-          qb_sync_token?: string | null
-          qb_meta_data?: any | null
-          last_quickbooks_sync?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -260,7 +137,6 @@ export interface Database {
           schedule_date_time: string
           order_amount: number
           order_payment_status: string
-          quickbooks_invoice_id: string | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -275,7 +151,6 @@ export interface Database {
           schedule_date_time: string
           order_amount: number
           order_payment_status?: string
-          quickbooks_invoice_id?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -290,7 +165,6 @@ export interface Database {
           schedule_date_time?: string
           order_amount?: number
           order_payment_status?: string
-          quickbooks_invoice_id?: string | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -317,41 +191,6 @@ export interface Database {
           service_id?: string
           quantity?: number
           created_at?: string
-        }
-      }
-      quickbooks_integrations: {
-        Row: {
-          id: string
-          user_id: string
-          access_token: string
-          refresh_token: string
-          realm_id: string
-          state: string | null
-          expires_at: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          access_token: string
-          refresh_token: string
-          realm_id: string
-          state?: string | null
-          expires_at: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          access_token?: string
-          refresh_token?: string
-          realm_id?: string
-          state?: string | null
-          expires_at?: string
-          created_at?: string
-          updated_at?: string
         }
       }
       // New subscription-related tables
@@ -714,7 +553,6 @@ export type Client = Database['public']['Tables']['clients']['Row']
 export type Service = Database['public']['Tables']['services']['Row']
 export type WorkOrder = Database['public']['Tables']['work_orders']['Row']
 export type WorkOrderService = Database['public']['Tables']['work_order_services']['Row']
-export type QuickBooksIntegration = Database['public']['Tables']['quickbooks_integrations']['Row']
 export type Subscription = Database['public']['Tables']['subscriptions']['Row']
 export type UsageTracking = Database['public']['Tables']['usage_tracking']['Row']
 export type UserSettings = Database['public']['Tables']['user_settings']['Row']
@@ -722,4 +560,4 @@ export type Location = Database['public']['Tables']['locations']['Row']
 export type Report = Database['public']['Tables']['reports']['Row']
 export type ApiKey = Database['public']['Tables']['api_keys']['Row']
 export type Webhook = Database['public']['Tables']['webhooks']['Row']
-export type AutomationRule = Database['public']['Tables']['automation_rules']['Row'] 
+export type AutomationRule = Database['public']['Tables']['automation_rules']['Row']

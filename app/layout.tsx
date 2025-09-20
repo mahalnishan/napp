@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Effortless - Streamline Your Work Orders Like Never Before | Free Beta Access",
+  title: "DotOrder.app - Streamline Your Work Orders Like Never Before | Free Beta Access",
   description: "Streamline your work orders, manage clients, track payments, and grow your business seamlessly. Get free beta access now!",
   keywords: [
     "work order management",
@@ -28,9 +28,9 @@ export const metadata: Metadata = {
     "field service",
     "business management"
   ],
-  authors: [{ name: "Effortless Team" }],
-  creator: "Effortless",
-  publisher: "Effortless",
+  authors: [{ name: "DotOrder.app Team" }],
+  creator: "DotOrder.app",
+  publisher: "DotOrder.app",
   formatDetection: {
     email: false,
     address: false,
@@ -44,24 +44,24 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: '/',
-    title: 'Effortless - Streamline Your Work Orders Like Never Before',
+    title: 'DotOrder.app - Streamline Your Work Orders Like Never Before',
     description: 'The complete work order management system for contractors and service businesses. Get free beta access now!',
-    siteName: 'Effortless',
+    siteName: 'DotOrder.app',
     images: [
       {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
-        alt: 'Effortless - Work Order Management System',
+        alt: 'DotOrder.app - Work Order Management System',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Effortless - Streamline Your Work Orders Like Never Before',
+    title: 'DotOrder.app - Streamline Your Work Orders Like Never Before',
     description: 'The complete work order management system for contractors and service businesses. Get free beta access now!',
     images: ['/og-image.svg'],
-    creator: '@effortless',
+    creator: '@dotorderapp',
   },
   robots: {
     index: true,
@@ -117,7 +117,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "Effortless",
+              "name": "DotOrder.app",
               "description": "The complete work order management system for contractors and service businesses",
               "url": process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
               "applicationCategory": "BusinessApplication",

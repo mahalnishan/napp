@@ -12,7 +12,6 @@ import { Plus, Edit, Trash2, Save, X, Settings, LinkIcon, Unlink, CheckCircle, A
 import { Worker } from '@/lib/types'
 
 import { BulkEditModal } from '@/components/bulk-edit-modal'
-import QuickBooksIntegration from '@/components/quickbooks-integration'
 import { subscriptionClientService } from '@/lib/subscription-client'
 import { PlanType, PLAN_LIMITS } from '@/lib/plan-constants'
 import { PaymentHandler } from '@/components/payment-handler'
@@ -1080,14 +1079,35 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Link className="h-5 w-5" />
-                  QuickBooks Integration
+                  QuickBooks Integration (Coming Soon)
                 </CardTitle>
                 <CardDescription>
-                  Connect your QuickBooks account to sync customers, invoices, and payments
+                  We're working on seamless integration with QuickBooks Online and QuickBooks Desktop
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <QuickBooksIntegration />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-blue-900">QuickBooks Integration</h4>
+                      <p className="text-sm text-blue-700">Coming soon! Stay tuned for updates.</p>
+                    </div>
+                    <Badge className="bg-blue-100 text-blue-800">Coming Soon</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Planned Features</h4>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div>• Sync customers automatically</div>
+                      <div>• Create invoices in QuickBooks</div>
+                      <div>• Sync payments and transactions</div>
+                      <div>• Reduce double-entry bookkeeping</div>
+                    </div>
+                  </div>
+                  <Button disabled className="w-full">
+                    <Link className="mr-2 h-4 w-4" />
+                    Coming Soon
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

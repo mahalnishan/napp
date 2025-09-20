@@ -1,4 +1,4 @@
-# Effortless - Work Order Management System
+# DotOrder.app - Work Order Management System
 
 A modern, full-stack work order management system built for contractors and service businesses. Built with Next.js 15, Supabase, and TypeScript.
 
@@ -55,7 +55,7 @@ A modern, full-stack work order management system built for contractors and serv
 
 ```bash
 git clone <repository-url>
-cd effortless
+cd dotorder-app
 ```
 
 ### 2. Install dependencies
@@ -118,44 +118,17 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# QuickBooks Integration (Optional)
-# You can also use these alternative variable names:
-# CLIENT_ID=your_quickbooks_client_id_here
-# CLIENT_SECRET=your_quickbooks_client_secret_here
-# ENVIRONMENT=sandbox
-# REDIRECT_URL=http://localhost:3000/api/quickbooks/callback
-QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id_here
-QUICKBOOKS_CLIENT_SECRET=your_quickbooks_client_secret_here
-QUICKBOOKS_ENVIRONMENT=sandbox
-QUICKBOOKS_REDIRECT_URI=http://localhost:3000/api/quickbooks/callback
+# QuickBooks Integration (Coming Soon)
+# QuickBooks integration is planned as an upcoming feature
+# QUICKBOOKS_CLIENT_ID=your_quickbooks_client_id_here
+# QUICKBOOKS_CLIENT_SECRET=your_quickbooks_client_secret_here
+# QUICKBOOKS_ENVIRONMENT=sandbox
+# QUICKBOOKS_REDIRECT_URI=http://localhost:3000/api/quickbooks/callback
 ```
 
-### 5. Set up QuickBooks Integration (Optional)
+### 5. QuickBooks Integration (Coming Soon)
 
-To enable QuickBooks integration for customer and invoice syncing:
-
-1. **Create a QuickBooks Developer Account**
-   - Go to [developer.intuit.com](https://developer.intuit.com)
-   - Sign up for a developer account
-   - Create a new app
-
-2. **Configure your QuickBooks App**
-   - Set the redirect URI to: `http://localhost:3000/api/quickbooks/callback` (for development)
-   - For production, use: `https://yourdomain.com/api/quickbooks/callback`
-   - Enable the "Accounting" scope
-
-3. **Get your App Credentials**
-   - Copy your Client ID and Client Secret
-   - Add them to your `.env.local` file
-
-4. **Set Environment**
-   - Use `sandbox` for development and testing
-   - Use `production` for live QuickBooks companies
-
-5. **Test the Integration**
-   - Run the app and go to Dashboard > Settings
-   - Click "Connect to QuickBooks" to test the OAuth flow
-   - Use the sandbox company for testing
+QuickBooks integration is planned as an upcoming feature. This will allow seamless syncing of customers, services, and invoices with QuickBooks Online and QuickBooks Desktop. Stay tuned for updates!
 
 ### 6. Assign existing users to free tier (if needed)
 

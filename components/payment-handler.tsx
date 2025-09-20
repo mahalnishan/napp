@@ -50,7 +50,7 @@ export function PaymentHandler({ currentPlan, onSuccess, onError }: PaymentHandl
         'Unlimited work orders',
         'Unlimited team members',
         'Advanced analytics',
-        'QuickBooks integration',
+        'QuickBooks integration (Coming Soon)',
         'Custom branding',
         'Advanced reporting',
         'Priority support'
@@ -188,8 +188,8 @@ export function PaymentHandler({ currentPlan, onSuccess, onError }: PaymentHandl
         <p>All plans include a 14-day free trial. Cancel anytime.</p>
         <p className="mt-1">
           Need help? Contact our support team at{' '}
-          <a href="mailto:support@effortless.com" className="text-blue-500 hover:underline">
-            support@effortless.com
+          <a href="mailto:support@dotorder.app" className="text-blue-500 hover:underline">
+            support@dotorder.app
           </a>
         </p>
       </div>

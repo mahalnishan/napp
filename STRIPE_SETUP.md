@@ -1,6 +1,6 @@
 # Stripe Payment Integration Setup
 
-This guide will help you set up Stripe payments for the Effortless application.
+This guide will help you set up Stripe payments for the DotOrder.app application.
 
 ## Prerequisites
 
@@ -147,4 +147,4 @@ Use Stripe's test mode for all development and testing. The integration automati
 For issues with:
 - **Stripe integration**: Check Stripe documentation and logs
 - **Application features**: Check application logs and database
-- **Billing questions**: Contact support@effortless.com 
+- **Billing questions**: Contact support@dotorder.app 

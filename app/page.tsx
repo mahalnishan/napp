@@ -88,7 +88,7 @@ export default function HomePage() {
     {
       icon: TrendingUp,
       title: 'Increase Revenue',
-      description: 'Contractors using Effortless see an average 35% increase in monthly revenue'
+      description: 'Contractors using DotOrder.app see an average 35% increase in monthly revenue'
     },
     {
       icon: Clock,
@@ -112,7 +112,7 @@ export default function HomePage() {
       name: 'Sarah Johnson',
       role: 'HVAC Contractor',
       company: 'Johnson Heating & Cooling',
-      content: 'Effortless has transformed our business. We went from managing 15 jobs to 45 jobs with the same team size. Revenue increased 40% in the first quarter.',
+      content: 'DotOrder.app has transformed our business. We went from managing 15 jobs to 45 jobs with the same team size. Revenue increased 40% in the first quarter.',
       rating: 5
     },
     {
@@ -156,7 +156,7 @@ export default function HomePage() {
         'Unlimited work orders',
         'Unlimited team members',
         'Advanced analytics',
-        'QuickBooks integration',
+        'QuickBooks integration (Coming Soon)',
         'Priority support',
         'Custom branding',
         'Advanced reporting'
@@ -188,7 +188,7 @@ export default function HomePage() {
     },
     {
       question: 'Can I use this on my phone?',
-      answer: 'Absolutely! Effortless is designed mobile-first, so you can manage work orders, update job status, and communicate with clients from anywhere.'
+      answer: 'Absolutely! DotOrder.app is designed mobile-first, so you can manage work orders, update job status, and communicate with clients from anywhere.'
     },
     {
       question: 'What if I need to cancel?',
@@ -206,7 +206,7 @@ export default function HomePage() {
       <header className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <h1 className="text-2xl font-bold text-gray-900">Effortless</h1>
+            <h1 className="text-2xl font-bold text-gray-900">DotOrder.app</h1>
             <div className="flex items-center space-x-4">
               <Link href="/auth/login">
                 <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
@@ -303,7 +303,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Contractors Choose Effortless
+              Why Contractors Choose DotOrder.app
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Join hundreds of contractors who've transformed their business with our platform
@@ -370,7 +370,7 @@ export default function HomePage() {
               Trusted by Contractors Nationwide
             </h2>
             <p className="text-xl text-gray-600">
-              See what our customers are saying about Effortless
+              See what our customers are saying about DotOrder.app
             </p>
           </div>
 
@@ -461,7 +461,7 @@ export default function HomePage() {
               Frequently Asked Questions
             </h2>
             <p className="text-xl text-gray-600">
-              Everything you need to know about Effortless
+              Everything you need to know about DotOrder.app
             </p>
           </div>
 
@@ -481,15 +481,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <h3 className="text-2xl font-bold mb-4">Effortless</h3>
+              <h3 className="text-2xl font-bold mb-4">DotOrder.app</h3>
               <p className="text-gray-400 mb-4">
                 The complete work order management system for contractors and service businesses.
               </p>
               <div className="flex space-x-4">
-                <a href="mailto:support@effortless.com" className="text-gray-400 hover:text-white">
+                <a href="mailto:support@dotorder.app" className="text-gray-400 hover:text-white">
                   <Mail className="h-5 w-5" />
                 </a>
-                <a href="tel:+1-800-EFFORTLESS" className="text-gray-400 hover:text-white">
+                <a href="tel:+1-800-DOTORDER" className="text-gray-400 hover:text-white">
                   <Phone className="h-5 w-5" />
                 </a>
               </div>
@@ -514,7 +514,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Effortless. All rights reserved.</p>
+            <p>&copy; 2024 DotOrder.app. All rights reserved.</p>
           </div>
         </div>
       </footer>

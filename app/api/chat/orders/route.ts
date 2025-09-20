@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      const publicPrompt = `You are Effortless site assistant. Answer public questions about the platform (features, pricing, getting started). Do NOT reveal any user data or orders. If asked for personal or order-specific info, say you can only share that after sign-in.`
+      const publicPrompt = `You are DotOrder.app site assistant. Answer public questions about the platform (features, pricing, getting started). Do NOT reveal any user data or orders. If asked for personal or order-specific info, say you can only share that after sign-in.`
       const answer = await askGemini(`${publicPrompt}\n\nVisitor: ${message}`)
       return NextResponse.json({ answer })
     }
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const ordersJson = JSON.stringify(orders || [])
     const clientsJson = JSON.stringify(clients || [])
 
-    const systemPrompt = `You are Effortless order assistant. Answer the user's questions in plain English sentences (no code snippets or jQuery). Use ONLY the provided JSON arrays of their orders and clients. Include relevant client info (name, email, phone) when it helps answer the question. If the user asks something unrelated, politely say you can only help with order or client questions.`
+    const systemPrompt = `You are DotOrder.app order assistant. Answer the user's questions in plain English sentences (no code snippets or jQuery). Use ONLY the provided JSON arrays of their orders and clients. Include relevant client info (name, email, phone) when it helps answer the question. If the user asks something unrelated, politely say you can only help with order or client questions.`
 
     const answer = await askGemini(`${systemPrompt}\n\nOrders:\n${ordersJson}\n\nClients:\n${clientsJson}\n\nUser: ${message}`)
 

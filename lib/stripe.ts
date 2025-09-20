@@ -26,7 +26,7 @@ export const STRIPE_PLANS = {
       'Unlimited work orders',
       'Unlimited team members',
       'Advanced analytics',
-      'QuickBooks integration',
+      'QuickBooks integration (Coming Soon)',
       'Custom branding',
       'Advanced reporting',
       'Priority support'
@@ -61,7 +61,7 @@ export async function createStripeCustomer(email: string, name?: string) {
       email,
       name,
       metadata: {
-        source: 'effortless'
+        source: 'dotorder-app'
       }
     })
     return customer
@@ -103,12 +103,12 @@ export async function createCheckoutSession({
       cancel_url: cancelUrl,
       metadata: {
         planType,
-        source: 'effortless'
+        source: 'dotorder-app'
       },
       subscription_data: {
         metadata: {
           planType,
-          source: 'effortless'
+          source: 'dotorder-app'
         }
       }
     })

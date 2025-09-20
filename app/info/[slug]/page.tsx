@@ -3,23 +3,23 @@ import { notFound } from 'next/navigation'
 
 const pages: Record<string, { title: string; subtitle?: string; sections: { heading: string; body: string }[] }> = {
   product: {
-    title: 'Effortless - Complete Work Order Management',
+    title: 'DotOrder.app - Complete Work Order Management',
     subtitle: 'The all-in-one platform that transforms how contractors and service businesses manage their operations',
     sections: [
       {
-        heading: 'What is Effortless?',
-        body: 'Effortless is a comprehensive work order management system designed specifically for contractors, service businesses, and field technicians. We eliminate the chaos of spreadsheets, paper forms, and disconnected systems by providing everything you need in one powerful, mobile-first platform.'
+        heading: 'What is DotOrder.app?',
+        body: 'DotOrder.app is a comprehensive work order management system designed specifically for contractors, service businesses, and field technicians. We eliminate the chaos of spreadsheets, paper forms, and disconnected systems by providing everything you need in one powerful, mobile-first platform.'
       },
       {
-        heading: 'Why Contractors Choose Effortless',
-        body: 'Traditional methods of managing work orders are time-consuming and error-prone. Effortless streamlines your entire workflow from job creation to payment collection. Our platform helps contractors increase revenue by 35% on average while reducing administrative overhead by 60%.'
+        heading: 'Why Contractors Choose DotOrder.app',
+        body: 'Traditional methods of managing work orders are time-consuming and error-prone. DotOrder.app streamlines your entire workflow from job creation to payment collection. Our platform helps contractors increase revenue by 35% on average while reducing administrative overhead by 60%.'
       },
       {
         heading: 'Core Platform Features',
         body: '• Smart Work Order Management: Create, assign, and track jobs with real-time updates\n• Complete Client CRM: Store contact history, service preferences, and invoicing in one place\n• Service Catalog & Pricing: Standardize services with dynamic pricing and easy quoting\n• Business Intelligence: Track revenue, analyze performance, and identify growth opportunities\n• Mobile-First Design: Access everything from the field with our responsive mobile app\n• Cloud-Based Security: Enterprise-grade security with automatic backups and data protection'
       },
       {
-        heading: 'Who Uses Effortless?',
+        heading: 'Who Uses DotOrder.app?',
         body: 'HVAC contractors, plumbers, electricians, landscapers, cleaning services, maintenance companies, and any service business that needs to manage work orders, clients, and invoicing efficiently. Our platform scales from solo contractors to multi-location service companies.'
       }
     ]
@@ -50,7 +50,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Seamless Integrations',
-        body: 'Connect with the tools you already use. QuickBooks integration syncs clients, services, and invoices automatically. Stripe integration provides secure online payments and customer billing portals. Zapier connections let you automate workflows with 5,000+ apps.'
+        body: 'Connect with the tools you already use. Stripe integration provides secure online payments and customer billing portals. QuickBooks integration coming soon! Zapier connections let you automate workflows with 5,000+ apps.'
       },
       {
         heading: 'Team Management & Collaboration',
@@ -72,7 +72,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Professional Plan - $24/month',
-        body: 'Most popular choice for growing service businesses.\n\n• Unlimited work orders\n• Unlimited team members\n• Advanced analytics and reporting\n• QuickBooks integration\n• Stripe payment processing\n• Priority email and chat support\n• Custom branding options\n• Advanced automation features\n• API access\n• Multi-location support\n\nEverything you need to scale your business efficiently.'
+        body: 'Most popular choice for growing service businesses.\n\n• Unlimited work orders\n• Unlimited team members\n• Advanced analytics and reporting\n• QuickBooks integration (Coming Soon)\n• Stripe payment processing\n• Priority email and chat support\n• Custom branding options\n• Advanced automation features\n• API access\n• Multi-location support\n\nEverything you need to scale your business efficiently.'
       },
       {
         heading: 'Enterprise Plan - $59/month',
@@ -86,11 +86,11 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
   },
   integrations: {
     title: 'Powerful Integrations',
-    subtitle: 'Connect Effortless with the tools you already use and love',
+    subtitle: 'Connect DotOrder.app with the tools you already use and love',
     sections: [
       {
-        heading: 'QuickBooks Integration',
-        body: 'Seamlessly sync your financial data with QuickBooks Online and QuickBooks Desktop. Automatically create customers, services, and invoices in QuickBooks. Sync payments and maintain accurate financial records. Reduce double-entry and eliminate reconciliation headaches.'
+        heading: 'QuickBooks Integration (Coming Soon)',
+        body: 'We\'re working on seamless integration with QuickBooks Online and QuickBooks Desktop. This will automatically sync customers, services, and invoices. Sync payments and maintain accurate financial records. Reduce double-entry and eliminate reconciliation headaches. Stay tuned for updates!'
       },
       {
         heading: 'Stripe Payment Processing',
@@ -98,7 +98,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Zapier & Webhook Automation',
-        body: 'Connect Effortless to over 5,000 apps through Zapier. Automate workflows with popular tools like Gmail, Slack, Trello, and more. Use webhooks to build custom integrations with your existing systems. Create powerful automations that save time and reduce manual work.'
+        body: 'Connect DotOrder.app to over 5,000 apps through Zapier. Automate workflows with popular tools like Gmail, Slack, Trello, and more. Use webhooks to build custom integrations with your existing systems. Create powerful automations that save time and reduce manual work.'
       },
       {
         heading: 'Calendar & Scheduling',
@@ -120,7 +120,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
     sections: [
       {
         heading: 'RESTful API',
-        body: 'Access all Effortless functionality through our comprehensive REST API. Create and manage work orders, clients, services, and invoices programmatically. Query analytics data and generate custom reports. Perfect for building custom integrations or connecting with existing systems.'
+        body: 'Access all DotOrder.app functionality through our comprehensive REST API. Create and manage work orders, clients, services, and invoices programmatically. Query analytics data and generate custom reports. Perfect for building custom integrations or connecting with existing systems.'
       },
       {
         heading: 'Authentication & Security',
@@ -128,7 +128,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Webhooks & Real-Time Updates',
-        body: 'Receive real-time notifications when data changes in Effortless. Webhooks for work order status changes, new clients, payments, and more. Build reactive integrations that respond to events automatically. Reduce polling and improve integration efficiency.'
+        body: 'Receive real-time notifications when data changes in DotOrder.app. Webhooks for work order status changes, new clients, payments, and more. Build reactive integrations that respond to events automatically. Reduce polling and improve integration efficiency.'
       },
       {
         heading: 'SDKs & Libraries',
@@ -154,7 +154,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Our Story',
-        body: 'Effortless was founded by a team of experienced contractors and software engineers who were frustrated by the lack of good tools for service businesses. We built the platform we wished we had when running our own service companies. Today, we serve thousands of contractors across North America.'
+        body: 'DotOrder.app was founded by a team of experienced contractors and software engineers who were frustrated by the lack of good tools for service businesses. We built the platform we wished we had when running our own service companies. Today, we serve thousands of contractors across North America.'
       },
       {
         heading: 'Our Values',
@@ -171,12 +171,12 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
     ]
   },
   about: {
-    title: 'About Effortless',
+    title: 'About DotOrder.app',
     subtitle: 'The complete story behind the platform that\'s transforming service businesses',
     sections: [
       {
         heading: 'How It All Started',
-        body: 'The idea for Effortless came from real frustration. Our founders were running successful service businesses but spending more time on paperwork than actual work. Spreadsheets were getting out of control, follow-ups were falling through the cracks, and we knew there had to be a better way.'
+        body: 'The idea for DotOrder.app came from real frustration. Our founders were running successful service businesses but spending more time on paperwork than actual work. Spreadsheets were getting out of control, follow-ups were falling through the cracks, and we knew there had to be a better way.'
       },
       {
         heading: 'The Problem We Solved',
@@ -184,7 +184,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Building the Solution',
-        body: 'We started by talking to hundreds of contractors, understanding their workflows, and identifying the biggest pain points. We built Effortless from the ground up specifically for service businesses, with mobile-first design and real-world usability in mind.'
+        body: 'We started by talking to hundreds of contractors, understanding their workflows, and identifying the biggest pain points. We built DotOrder.app from the ground up specifically for service businesses, with mobile-first design and real-world usability in mind.'
       },
       {
         heading: 'Our Growth',
@@ -196,7 +196,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Join Our Journey',
-        body: 'Whether you\'re a solo contractor or running a multi-location service company, we invite you to join thousands of other service professionals who have transformed their businesses with Effortless. Let\'s build the future of service business management together.'
+        body: 'Whether you\'re a solo contractor or running a multi-location service company, we invite you to join thousands of other service professionals who have transformed their businesses with DotOrder.app. Let\'s build the future of service business management together.'
       }
     ]
   },
@@ -240,15 +240,15 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
   },
   terms: {
     title: 'Terms of Service',
-    subtitle: 'The legal agreement between you and Effortless',
+    subtitle: 'The legal agreement between you and DotOrder.app',
     sections: [
       {
         heading: 'Acceptance of Terms',
-        body: 'By accessing or using Effortless, you agree to be bound by these Terms of Service. If you disagree with any part of these terms, you may not access our service. These terms apply to all users of the service, including without limitation users who are browsers, vendors, customers, merchants, and contributors of content.'
+        body: 'By accessing or using DotOrder.app, you agree to be bound by these Terms of Service. If you disagree with any part of these terms, you may not access our service. These terms apply to all users of the service, including without limitation users who are browsers, vendors, customers, merchants, and contributors of content.'
       },
       {
         heading: 'Description of Service',
-        body: 'Effortless provides work order management software for service businesses. Our platform includes features for creating and managing work orders, client management, invoicing, analytics, and related business operations. We reserve the right to modify or discontinue any part of our service at any time.'
+        body: 'DotOrder.app provides work order management software for service businesses. Our platform includes features for creating and managing work orders, client management, invoicing, analytics, and related business operations. We reserve the right to modify or discontinue any part of our service at any time.'
       },
       {
         heading: 'User Accounts',
@@ -268,11 +268,11 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Intellectual Property',
-        body: 'Our service and its original content, features, and functionality are owned by Effortless and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws. You may not copy, modify, or distribute our software without permission.'
+        body: 'Our service and its original content, features, and functionality are owned by DotOrder.app and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws. You may not copy, modify, or distribute our software without permission.'
       },
       {
         heading: 'Limitation of Liability',
-        body: 'In no event shall Effortless be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of our service.'
+        body: 'In no event shall DotOrder.app be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of our service.'
       },
       {
         heading: 'Termination',
@@ -280,7 +280,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Governing Law',
-        body: 'These terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Effortless operates, without regard to its conflict of law provisions. Any disputes arising from these terms will be resolved in the appropriate courts of that jurisdiction.'
+        body: 'These terms shall be governed by and construed in accordance with the laws of the jurisdiction in which DotOrder.app operates, without regard to its conflict of law provisions. Any disputes arising from these terms will be resolved in the appropriate courts of that jurisdiction.'
       }
     ]
   },
@@ -290,23 +290,23 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
     sections: [
       {
         heading: 'Customer Support',
-        body: 'Need help with your account or have questions about our platform?\n\nEmail: support@effortless.com\nResponse time: Within 24 hours\n\nFor urgent issues, please include your account details and a clear description of the problem.'
+        body: 'Need help with your account or have questions about our platform?\n\nEmail: support@dotorder.app\nResponse time: Within 24 hours\n\nFor urgent issues, please include your account details and a clear description of the problem.'
       },
       {
         heading: 'Sales Inquiries',
-        body: 'Interested in Effortless for your business or have questions about our plans?\n\nEmail: sales@effortless.com\nPhone: 1-800-EFFORTLESS\n\nOur sales team can help you choose the right plan and get you set up quickly.'
+        body: 'Interested in DotOrder.app for your business or have questions about our plans?\n\nEmail: sales@dotorder.app\nPhone: 1-800-DOTORDER\n\nOur sales team can help you choose the right plan and get you set up quickly.'
       },
       {
         heading: 'Partnership Opportunities',
-        body: 'Looking to integrate with Effortless or become a partner?\n\nEmail: partnerships@effortless.com\n\nWe\'re always interested in working with complementary service providers and technology partners.'
+        body: 'Looking to integrate with DotOrder.app or become a partner?\n\nEmail: partnerships@dotorder.app\n\nWe\'re always interested in working with complementary service providers and technology partners.'
       },
       {
         heading: 'Technical Support',
-        body: 'Need help with API integration or technical implementation?\n\nEmail: developers@effortless.com\nDocumentation: https://docs.effortless.com\n\nOur technical team can help with custom integrations and development questions.'
+        body: 'Need help with API integration or technical implementation?\n\nEmail: developers@dotorder.app\nDocumentation: https://docs.dotorder.app\n\nOur technical team can help with custom integrations and development questions.'
       },
       {
         heading: 'General Inquiries',
-        body: 'For all other questions or feedback:\n\nEmail: hello@effortless.com\n\nWe read every message and will get back to you as soon as possible.'
+        body: 'For all other questions or feedback:\n\nEmail: hello@dotorder.app\n\nWe read every message and will get back to you as soon as possible.'
       },
       {
         heading: 'Office Hours',
@@ -314,7 +314,7 @@ const pages: Record<string, { title: string; subtitle?: string; sections: { head
       },
       {
         heading: 'Mailing Address',
-        body: 'Effortless Inc.\n123 Business Street\nSuite 100\nCity, State 12345\nUnited States\n\nFor legal notices or formal correspondence only.'
+        body: 'DotOrder.app Inc.\n123 Business Street\nSuite 100\nCity, State 12345\nUnited States\n\nFor legal notices or formal correspondence only.'
       }
     ]
   }

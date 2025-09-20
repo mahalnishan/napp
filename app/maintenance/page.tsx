@@ -142,8 +142,8 @@ export default function MaintenancePage() {
             <div className="border-t pt-4">
               <p className="text-xs text-slate-500">
                 If this issue persists, please contact support at{' '}
-                <a href="mailto:support@effortless.com" className="text-blue-600 hover:underline">
-                  support@effortless.com
+                <a href="mailto:support@dotorder.app" className="text-blue-600 hover:underline">
+                  support@dotorder.app
                 </a>
               </p>
             </div>

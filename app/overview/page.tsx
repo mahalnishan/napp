@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 
 export const metadata = {
-  title: 'Effortless – Product Overview',
+  title: 'DotOrder.app – Product Overview',
   description: "Quick tour of the platform's key benefits and architecture."
 }
 
@@ -17,8 +17,8 @@ export default function ProductOverviewPage () {
           Work-order management made&nbsp;simple
         </h1>
         <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
-          Effortless combines a delightful user dashboard with a powerful admin portal—integrated with
-          QuickBooks, Stripe, and Supabase—for a truly end-to-end solution.
+          DotOrder.app combines a delightful user dashboard with a powerful admin portal—integrated with
+          Stripe and Supabase—for a truly end-to-end solution. QuickBooks integration coming soon!
         </p>
         <div className="flex justify-center gap-4">
           <Button asChild size="lg">
@@ -69,7 +69,7 @@ export default function ProductOverviewPage () {
           <CardHeader>
             <Database className="h-6 w-6 text-indigo-600" />
             <CardTitle>Plug-and-play integrations</CardTitle>
-            <CardDescription>QuickBooks &amp; Stripe wired in out-of-the-box.</CardDescription>
+            <CardDescription>Stripe wired in out-of-the-box. QuickBooks integration coming soon!</CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-gray-600">
             Automate invoicing, billing, and accounting with minimal configuration.

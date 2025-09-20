@@ -79,7 +79,7 @@ export function MobileNav() {
             <div className="flex h-full flex-col">
               {/* Header */}
               <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
-                <h1 className="text-xl font-bold text-gray-900">Effortless</h1>
+                <h1 className="text-xl font-bold text-gray-900">DotOrder.app</h1>
                 <Button
                   variant="ghost"
                   size="sm"
